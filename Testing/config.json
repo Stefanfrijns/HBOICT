@@ -1,0 +1,14 @@
+{
+    "modules": [
+        {
+            "module": "Ubuntu Server",
+            "vm": {
+                "name": "UbuntuServerVM",
+                "vhd_url": "https://techloudgeek.com/download/image/?link=https://dlconusc1.linuxvmimages.com/046389e06777452db2ccf9a32efa3760:virtualbox/U/24.04/UbuntuServer_24.04_VB.7z",
+                "os_type": "Ubuntu_64",
+                "memory_size": 2048,
+                "cpus": 2
+            }
+        }
+    ]
+}
