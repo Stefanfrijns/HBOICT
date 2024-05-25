@@ -129,9 +129,7 @@ try {
 
     # Attach the VDI
     Log-Message "Attaching VDI..."
-    $attachCommand = "& `"$vboxManagePath`" storageattach `"$VMName`" --storagectl `"'SATA_Controller'`" --port 0 --device 0 --type hdd --medium `"$($vdiFilePath.FullName)`""
-    Log-Message "Running attach command: $attachCommand"
-    Invoke-Expression $attachCommand
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium $($vdiFilePath.FullName)
     Log-Message "VDI attached successfully."
 
     # Verify attachment
