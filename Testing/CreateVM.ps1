@@ -126,8 +126,7 @@ try {
 
     # Attach the VDI
     Log-Message "Attaching VDI..."
-    $vdiFilePathEscaped = $vdiFilePath.FullName.Replace(" ", "` ")
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium "$vdiFilePathEscaped"
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium "$($vdiFilePath.FullName)"
     Log-Message "VDI attached successfully."
 
     # Configure boot order
