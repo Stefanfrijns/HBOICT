@@ -127,11 +127,15 @@ try {
     & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1
     Log-Message "Storage controller added successfully."
 
-    # Attach the VDI from the correct path
-    Log-Message "Attaching VDI..."
-    $vdiPath = "C:\Users\Public\LinuxVMs\$VMName\$($vdiFilePath.Name)"
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiPath"
-    Log-Message "VDI attached successfully."
+    # Add the VDI to VirtualBox
+    Log-Message "Adding VDI to VirtualBox..."
+    & "$vboxManagePath" createmedium disk --filename "$($vdiFilePath.FullName)" --format VDI
+    Log-Message "VDI added to VirtualBox successfully."
+
+    # Attach the VDI to the SATA controller
+    Log-Message "Attaching VDI to the SATA controller..."
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$($vdiFilePath.FullName)"
+    Log-Message "VDI attached to the SATA controller successfully."
 
     # Verify attachment
     $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
@@ -139,7 +143,7 @@ try {
     Log-Message "VM Info: $vmInfo"
 
     # Check if the VDI is attached correctly
-    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$vdiPath") {
+    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$($vdiFilePath.FullName)") {
         Log-Message "Failed to attach VDI file to the VM."
         throw "Failed to attach VDI file to the VM."
     }
