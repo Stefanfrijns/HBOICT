@@ -109,6 +109,9 @@ try {
     }
     Log-Message "VDI file found at $($vdiFilePath.FullName)"
 
+    # Wait to ensure the file system is updated
+    Start-Sleep -Seconds 5
+
     # Create the VM
     Log-Message "Creating VM..."
     & "$vboxManagePath" createvm --name $VMName --ostype $OSType --register
