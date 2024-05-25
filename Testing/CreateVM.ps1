@@ -128,7 +128,7 @@ try {
     Log-Message "Storage controller added successfully."
 
     # Attach the VDI from the correct path
-    $vdiPath = "C:\Users\Public\LinuxVMs\$VMName\$($vdiFilePath.Name)"
+    $vdiPath = $vdiFilePath.FullName
     Log-Message "Attaching VDI from $vdiPath..."
     
     if (-not (Test-Path $vdiPath)) {
