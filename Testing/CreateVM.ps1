@@ -127,15 +127,10 @@ try {
     & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1
     Log-Message "Storage controller added successfully."
 
-    # Add the VDI to VirtualBox
-    Log-Message "Adding VDI to VirtualBox..."
-    & "$vboxManagePath" createmedium disk --filename "$($vdiFilePath.FullName)" --format VDI
-    Log-Message "VDI added to VirtualBox successfully."
-
-    # Attach the VDI to the SATA controller
-    Log-Message "Attaching VDI to the SATA controller..."
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$($vdiFilePath.FullName)"
-    Log-Message "VDI attached to the SATA controller successfully."
+    # Attach the VDI from the correct path
+    Log-Message "Attaching VDI..."
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium $vdiFilePath.FullName
+    Log-Message "VDI attached successfully."
 
     # Verify attachment
     $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
