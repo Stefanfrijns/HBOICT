@@ -6,7 +6,7 @@ param (
     [int]$CPUs
 )
 
-# Logbestand instellen
+# Set up the log file
 $logFilePath = "$env:Public\CreateVM.log"
 function Log-Message {
     param (
@@ -18,7 +18,7 @@ function Log-Message {
     Add-Content -Path $logFilePath -Value $logMessage
 }
 
-# Functie om een bestand te downloaden
+# Function to download a file
 function Download-File {
     param (
         [string]$url,
@@ -28,7 +28,7 @@ function Download-File {
     $client.DownloadFile($url, $output)
 }
 
-# Functie om .7z-bestand te extraheren
+# Function to extract .7z file
 function Extract-7z {
     param (
         [string]$sevenZipPath,
@@ -68,29 +68,29 @@ function Extract-7z {
     return $vdiFilePath
 }
 
-# Begin van het script loggen
+# Log the start of the script
 Log-Message "Script execution started. Parameters: VMName=$VMName, VHDUrl=$VHDUrl, OSType=$OSType, MemorySize=$MemorySize, CPUs=$CPUs"
 
-# Controleer of VBoxManage beschikbaar is
+# Check if VBoxManage is available
 $vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
 if (-not (Test-Path $vboxManagePath)) {
     Log-Message "VBoxManage not found. Ensure VirtualBox is installed."
     throw "VBoxManage not found."
 }
 
-# Controleer of 7-Zip beschikbaar is
+# Check if 7-Zip is available
 $sevenZipPath = "C:\Program Files\7-Zip\7z.exe"
 if (-not (Test-Path $sevenZipPath)) {
     Log-Message "7-Zip not found. Ensure 7-Zip is installed."
     throw "7-Zip not found."
 }
 
-# Download en extraheer de VHD
+# Download and extract the VHD
 $vhdLocalPath = "$env:Public\$VMName.7z"
 $vhdExtractedPath = "C:\Users\Public\LinuxVMs\$VMName"
 
 try {
-    # Controleer of het bestand al bestaat
+    # Check if the file already exists
     if (Test-Path $vhdLocalPath) {
         Log-Message "VHD archive file already exists at $vhdLocalPath. Skipping download."
     } else {
@@ -119,9 +119,9 @@ try {
     & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --nic1 nat
     Log-Message "VM settings modified successfully."
 
-    # Add storage controller
+    # Add storage controller with 1 port
     Log-Message "Adding storage controller..."
-    & "$vboxManagePath" storagectl $VMName --name "SATA Controller" --add sata --controller IntelAhci
+    & "$vboxManagePath" storagectl $VMName --name "SATA Controller" --add sata --controller IntelAhci --portcount 1
     Log-Message "Storage controller added successfully."
 
     # Attach the VDI
