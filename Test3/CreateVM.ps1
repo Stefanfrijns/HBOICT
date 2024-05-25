@@ -6,6 +6,11 @@ param (
     [int]$CPUs
 )
 
+# Validate input parameters
+if (-not $VMName -or -not $VHDUrl -or -not $OSType -or -not $MemorySize -or -not $CPUs) {
+    throw "All parameters must be provided: VMName, VHDUrl, OSType, MemorySize, CPUs"
+}
+
 # Set up the log file
 $logFilePath = "$env:Public\CreateVM.log"
 function Log-Message {
