@@ -126,10 +126,15 @@ try {
 
     # Attach the VDI
     Log-Message "Attaching VDI..."
-    $attachCommand = "$vboxManagePath storageattach $VMName --storagectl 'SATA Controller' --port 0 --device 0 --type hdd --medium '$($vdiFilePath.FullName)'"
+    $attachCommand = "& `"$vboxManagePath`" storageattach `"$VMName`" --storagectl `"'SATA Controller'`" --port 0 --device 0 --type hdd --medium `"$($vdiFilePath.FullName)`""
     Log-Message "Running attach command: $attachCommand"
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium $vdiFilePath.FullName
+    Invoke-Expression $attachCommand
     Log-Message "VDI attached successfully."
+
+    # Verify attachment
+    $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
+    $vmInfo = Invoke-Expression $verifyCommand
+    Log-Message "VM Info: $vmInfo"
 
     # Configure boot order
     Log-Message "Configuring boot order..."
