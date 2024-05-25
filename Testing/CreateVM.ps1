@@ -87,7 +87,7 @@ if (-not (Test-Path $sevenZipPath)) {
 
 # Download en extraheer de VHD
 $vhdLocalPath = "$env:Public\$VMName.7z"
-$vhdExtractedPath = "$env:Public\$VMName"
+$vhdExtractedPath = "C:\Users\Public\LinuxVMs\$VMName"
 
 try {
     # Controleer of het bestand al bestaat
