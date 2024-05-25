@@ -139,6 +139,12 @@ try {
     $vmInfo = Invoke-Expression $verifyCommand
     Log-Message "VM Info: $vmInfo"
 
+    # Check if the VDI is attached correctly
+    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$($vdiFilePath.FullName)") {
+        Log-Message "Failed to attach VDI file to the VM."
+        throw "Failed to attach VDI file to the VM."
+    }
+
     # Configure boot order
     Log-Message "Configuring boot order..."
     & "$vboxManagePath" modifyvm $VMName --boot1 disk --boot2 none --boot3 none --boot4 none
