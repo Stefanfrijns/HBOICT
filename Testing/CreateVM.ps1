@@ -130,9 +130,15 @@ try {
     # Attach the VDI from the correct path
     $vdiPath = "C:\Users\Public\LinuxVMs\$VMName\$($vdiFilePath.Name)"
     Log-Message "Attaching VDI from $vdiPath..."
-    $escapedVdiPath = $vdiPath -replace '\\', '\\\\'
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$escapedVdiPath"
-    Log-Message "VDI attached successfully."
+    $attachCommand = "& `"$vboxManagePath`" storageattach `"$VMName`" --storagectl `"'SATA_Controller'`" --port 0 --device 0 --type hdd --medium `"$vdiPath`""
+    Log-Message "Running attach command: $attachCommand"
+    try {
+        Invoke-Expression $attachCommand
+        Log-Message "VDI attached successfully."
+    } catch {
+        Log-Message "Failed to attach VDI. Error: $_"
+        throw "Failed to attach VDI file to the VM."
+    }
 
     # Verify attachment
     $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
@@ -140,7 +146,7 @@ try {
     Log-Message "VM Info: $vmInfo"
 
     # Check if the VDI is attached correctly
-    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$escapedVdiPath") {
+    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$vdiPath") {
         Log-Message "Failed to attach VDI file to the VM."
         throw "Failed to attach VDI file to the VM."
     }
