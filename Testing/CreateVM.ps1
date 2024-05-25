@@ -3,9 +3,7 @@ param (
     [string]$VHDUrl,
     [string]$OSType,
     [int]$MemorySize,
-    [int]$CPUs,
-    [string]$HostNIC,
-    [string]$ISOPath
+    [int]$CPUs
 )
 
 # Set up the log file
@@ -71,7 +69,7 @@ function Extract-7z {
 }
 
 # Log the start of the script
-Log-Message "Script execution started. Parameters: VMName=$VMName, VHDUrl=$VHDUrl, OSType=$OSType, MemorySize=$MemorySize, CPUs=$CPUs, HostNIC=$HostNIC, ISOPath=$ISOPath"
+Log-Message "Script execution started. Parameters: VMName=$VMName, VHDUrl=$VHDUrl, OSType=$OSType, MemorySize=$MemorySize, CPUs=$CPUs"
 
 # Check if VBoxManage is available
 $vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
@@ -121,31 +119,19 @@ try {
 
     # Modify VM settings
     Log-Message "Modifying VM settings..."
-    & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --vram 16 --graphicscontroller vmsvga --nic1 bridged --bridgeadapter1 "$HostNIC"
+    & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --nic1 nat
     Log-Message "VM settings modified successfully."
 
-    # Add SATA storage controller
-    Log-Message "Adding SATA storage controller..."
-    & "$vboxManagePath" storagectl $VMName --name "SATA" --add sata --controller IntelAHCI --portcount 1 --bootable on
-    Log-Message "SATA storage controller added successfully."
-
-    # Add IDE storage controller
-    Log-Message "Adding IDE storage controller..."
-    & "$vboxManagePath" storagectl $VMName --name "IDE" --add ide --controller PIIX4 --hostiocache on
-    Log-Message "IDE storage controller added successfully."
+    # Add storage controller with 1 port
+    Log-Message "Adding storage controller..."
+    & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1
+    Log-Message "Storage controller added successfully."
 
     # Attach the VDI from the correct path
     $vdiPath = "C:\Users\Public\LinuxVMs\$VMName\$($vdiFilePath.Name)"
     Log-Message "Attaching VDI from $vdiPath..."
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA" --port 0 --device 0 --type hdd --medium "$vdiPath"
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiPath"
     Log-Message "VDI attached successfully."
-
-    # Attach the ISO to the IDE controller
-    if ($ISOPath) {
-        Log-Message "Attaching ISO from $ISOPath..."
-        & "$vboxManagePath" storageattach $VMName --storagectl "IDE" --port 0 --device 0 --type dvddrive --medium "$ISOPath"
-        Log-Message "ISO attached successfully."
-    }
 
     # Verify attachment
     $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
@@ -153,7 +139,7 @@ try {
     Log-Message "VM Info: $vmInfo"
 
     # Check if the VDI is attached correctly
-    if ($vmInfo -notmatch "SATA-0-0.*medium=$vdiPath") {
+    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$vdiPath") {
         Log-Message "Failed to attach VDI file to the VM."
         throw "Failed to attach VDI file to the VM."
     }
