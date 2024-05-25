@@ -127,11 +127,32 @@ try {
     & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1 --bootable on
     Log-Message "Storage controller added successfully."
 
-    # Save the VDI path for the next script
+    # Attach the VDI from the correct path
     $vdiPath = "C:\Users\Public\LinuxVMs\$VMName\$($vdiFilePath.Name)"
-    Set-Content -Path "$env:Public\vdiPath.txt" -Value $vdiPath
+    Log-Message "Attaching VDI from $vdiPath..."
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiPath"
+    Log-Message "VDI attached successfully."
 
-    Log-Message "First part of the script completed successfully. Run the second script to attach the VDI file and start the VM."
+    # Verify attachment
+    $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
+    $vmInfo = Invoke-Expression $verifyCommand
+    Log-Message "VM Info: $vmInfo"
+
+    # Check if the VDI is attached correctly
+    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$vdiPath") {
+        Log-Message "Failed to attach VDI file to the VM."
+        throw "Failed to attach VDI file to the VM."
+    }
+
+    # Configure boot order
+    Log-Message "Configuring boot order..."
+    & "$vboxManagePath" modifyvm $VMName --boot1 disk --boot2 none --boot3 none --boot4 none
+    Log-Message "Boot order configured successfully."
+
+    # Start the VM
+    Log-Message "Starting VM..."
+    & "$vboxManagePath" startvm $VMName --type headless
+    Log-Message "VM started successfully."
 }
 catch {
     Log-Message "An error occurred: $_.Exception.Message"
