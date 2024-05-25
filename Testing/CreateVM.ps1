@@ -116,7 +116,7 @@ try {
 
     # Modify VM settings
     Log-Message "Modifying VM settings..."
-    & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --nic1 nat --natpf1 "guestssh,tcp,,2222,,22"
+    & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --nic1 nat
     Log-Message "VM settings modified successfully."
 
     # Add storage controller
