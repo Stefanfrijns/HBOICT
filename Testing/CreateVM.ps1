@@ -124,7 +124,7 @@ try {
 
     # Add storage controller with 1 port
     Log-Message "Adding storage controller..."
-    & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1
+    & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1 --bootable on
     Log-Message "Storage controller added successfully."
 
     # Attach the VDI from the correct path
