@@ -124,10 +124,6 @@ try {
     Move-Item -Path $vdiFilePath.FullName -Destination $newVdiPath
     Log-Message "VDI file renamed to $newVdiPath"
 
-    # Assign a new UUID to the VDI file
-    & "$vboxManagePath" internalcommands sethduuid "$newVdiPath"
-    Log-Message "New UUID assigned to $newVdiPath"
-
     # Wait to ensure the file system is updated
     Start-Sleep -Seconds 5
 
