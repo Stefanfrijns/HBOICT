@@ -124,6 +124,57 @@ try {
     # Assign a new UUID to the VDI file
     & "$vboxManagePath" internalcommands sethduuid "$vdiFilePath"
     Log-Message "New UUID assigned to $vdiFilePath"
+
+    # Wait to ensure the file system is updated
+    Start-Sleep -Seconds 5
+
+    # Create the VM
+    Log-Message "Creating VM..."
+    & "$vboxManagePath" createvm --name $VMName --ostype $OSType --register
+    Log-Message "VM created successfully."
+
+    # Modify VM settings
+    Log-Message "Modifying VM settings..."
+    & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --nic1 nat --vram 16 --graphicscontroller vmsvga
+    Log-Message "VM settings modified successfully."
+
+    # Add storage controller with 1 port
+    Log-Message "Adding storage controller..."
+    & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1 --bootable on
+    Log-Message "Storage controller added successfully."
+
+    # Attach the VDI from the correct path
+    Log-Message "Attaching VDI from $vdiFilePath..."
+    
+    if (-not (Test-Path $vdiFilePath)) {
+        Log-Message "VDI file not found at $vdiFilePath"
+        throw "VDI file not found at $vdiFilePath"
+    }
+    
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
+    Log-Message "VDI attached successfully."
+
+    # Verify attachment
+    $escapedVdiPath = [regex]::Escape($vdiFilePath)
+    $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
+    $vmInfo = Invoke-Expression $verifyCommand
+    Log-Message "VM Info: $vmInfo"
+
+    # Check if the VDI is attached correctly
+    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$escapedVdiPath") {
+        Log-Message "Failed to attach VDI file to the VM."
+        throw "Failed to attach VDI file to the VM."
+    }
+
+    # Configure boot order
+    Log-Message "Configuring boot order..."
+    & "$vboxManagePath" modifyvm $VMName --boot1 disk --boot2 none --boot3 none --boot4 none
+    Log-Message "Boot order configured successfully."
+
+    # Start the VM
+    Log-Message "Starting VM..."
+    & "$vboxManagePath" startvm $VMName --type headless
+    Log-Message "VM started successfully."
 }
 catch {
     Log-Message "An error occurred: $_.Exception.Message"
