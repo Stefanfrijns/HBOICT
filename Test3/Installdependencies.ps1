@@ -49,7 +49,7 @@ function Extract-7z {
         $vdiFilePath = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1
         if ($vdiFilePath) {
             Write-Output "VDI file already exists in $outputFolder. Skipping extraction."
-            return $vdiFilePath
+            return $vdiFilePath.FullName
         } else {
             Remove-Item -Recurse -Force $outputFolder
         }
@@ -75,22 +75,24 @@ function Extract-7z {
     if (-not $vdiFilePath) {
         throw "VDI file not found after extraction. Check $logFilePath for details."
     }
-    return $vdiFilePath
+    return $vdiFilePath.FullName
 }
 
-# Function to rename VDI file
-function Rename-VDIFile {
+# Function to rename VDI file and set new UUID
+function Rename-VDI {
     param (
-        [string]$vdiFilePath,
+        [string]$vdiPath,
         [string]$newName
     )
-    try {
-        $newVdiPath = Join-Path -Path (Split-Path -Parent $vdiFilePath) -ChildPath $newName
-        Move-Item -Path $vdiFilePath -Destination $newVdiPath -Force
-        return $newVdiPath
-    } catch {
-        throw "Failed to rename VDI file from $vdiFilePath to $newName"
-    }
+    $newVdiPath = Join-Path -Path (Split-Path $vdiPath -Parent) -ChildPath "$newName.vdi"
+    Move-Item -Path $vdiPath -Destination $newVdiPath
+    Log-Message "VDI file renamed to $newVdiPath"
+
+    # Assign a new UUID to the VDI file
+    & "$vboxManagePath" internalcommands sethduuid "$newVdiPath"
+    Log-Message "New UUID assigned to $newVdiPath"
+
+    return $newVdiPath
 }
 
 # Log the start of the script
@@ -132,15 +134,10 @@ try {
         Log-Message "Extracted VDI file not found in $vhdExtractedPath"
         throw "Extraction failed or VDI file not found."
     }
-    Log-Message "VDI file found at $($vdiFilePath.FullName)"
+    Log-Message "VDI file found at $vdiFilePath"
 
-    # Rename the VDI file to match the VM name
-    $newVdiPath = Rename-VDIFile -vdiFilePath $vdiFilePath.FullName -newName "$VMName.vdi"
-    Log-Message "VDI file renamed to $newVdiPath"
-
-    # Assign a new UUID to the VDI file
-    & "$vboxManagePath" internalcommands sethduuid "$newVdiPath"
-    Log-Message "New UUID assigned to $newVdiPath"
+    # Rename the VDI file and set a new UUID
+    $newVdiPath = Rename-VDI -vdiPath $vdiFilePath -newName $VMName
 
     # Wait to ensure the file system is updated
     Start-Sleep -Seconds 5
