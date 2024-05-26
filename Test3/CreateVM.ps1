@@ -148,6 +148,11 @@ try {
     Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
     Log-Message "VDI file renamed to $renamedVDIPath"
 
+    # Assign a new UUID to the renamed VDI file
+    Log-Message "Assigning new UUID to VDI file..."
+    & "$vboxManagePath" internalcommands sethduuid "$renamedVDIPath"
+    Log-Message "New UUID assigned to $renamedVDIPath"
+
     # Ensure the target directory exists
     if (-not (Test-Path $vhdExtractedPath)) {
         New-Item -ItemType Directory -Force -Path $vhdExtractedPath
@@ -158,11 +163,6 @@ try {
     Log-Message "Cloning VDI to $clonedVDIPath..."
     & "$vboxManagePath" clonevdi "$renamedVDIPath" "$clonedVDIPath"
     Log-Message "VDI cloned successfully to $clonedVDIPath"
-
-    # Remove the original renamed VDI file
-    Log-Message "Removing original renamed VDI file..."
-    Remove-Item -Path $renamedVDIPath -Force
-    Log-Message "Original renamed VDI file removed."
 
     # Create the VM
     Log-Message "Creating VM..."
@@ -193,5 +193,4 @@ catch {
     Log-Message "An error occurred: $($_.Exception.Message)"
     throw
 }
-
 Log-Message "Script execution completed successfully."
