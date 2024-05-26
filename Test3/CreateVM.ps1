@@ -71,11 +71,11 @@ function Extract-7z {
     $process.WaitForExit()
     $output | Add-Content -Path $logFilePath
 
-    $vdiFilePath = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1
-    if (-not $vdiFilePath) {
+    $vdiFilePaths = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse
+    if (-not $vdiFilePaths) {
         throw "VDI file not found after extraction. Check $logFilePath for details."
     }
-    return $vdiFilePath
+    return $vdiFilePaths
 }
 
 # Log the start of the script
@@ -110,18 +110,20 @@ try {
     }
 
     Log-Message "Extracting VHD to $vhdExtractedPath..."
-    $vdiFilePath = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $vhdExtractedPath
+    $vdiFilePaths = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $vhdExtractedPath
     Log-Message "Extraction process completed."
 
-    if (-not $vdiFilePath) {
+    if (-not $vdiFilePaths) {
         Log-Message "Extracted VDI file not found in $vhdExtractedPath"
         throw "Extraction failed or VDI file not found."
     }
-    Log-Message "VDI file found at $($vdiFilePath.FullName)"
+
+    $vdiFilePath = $vdiFilePaths[0].FullName
+    Log-Message "VDI file found at $vdiFilePath"
 
     # Rename the VDI file to match the VM name
-    $newVdiPath = Join-Path -Path $vdiFilePath.DirectoryName -ChildPath "$VMName.vdi"
-    Rename-Item -Path $vdiFilePath.FullName -NewName $newVdiPath
+    $newVdiPath = Join-Path -Path $vhdExtractedPath -ChildPath "$VMName.vdi"
+    Rename-Item -Path $vdiFilePath -NewName $newVdiPath
     Log-Message "VDI file renamed to $newVdiPath"
 
     # Wait to ensure the file system is updated
