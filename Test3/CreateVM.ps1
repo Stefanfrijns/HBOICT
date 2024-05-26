@@ -87,7 +87,7 @@ function Set-VDIUUID {
         [string]$vdiFilePath
     )
     try {
-        $newUUID = (New-Guid).Guid
+        $newUUID = [guid]::NewGuid().Guid
         $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`" `"$newUUID`""
         Log-Message "Running UUID command: $uuidCommand"
         Invoke-Expression $uuidCommand
@@ -114,7 +114,7 @@ function Create-VBoxFile {
     $vboxContent = @"
 <?xml version="1.0"?>
 <VirtualBox xmlns="http://www.virtualbox.org/" version="1.19-windows">
-  <Machine uuid="{(New-Guid).Guid}" name="$vmName" OSType="$osType" snapshotFolder="Snapshots">
+  <Machine uuid="{$([guid]::NewGuid())}" name="$vmName" OSType="$osType" snapshotFolder="Snapshots">
     <Description>$vmName VirtualBox Image</Description>
     <MediaRegistry>
       <HardDisks>
