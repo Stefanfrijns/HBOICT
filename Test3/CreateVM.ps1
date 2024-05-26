@@ -166,15 +166,9 @@ try {
     # Assign a new UUID to the VDI file
     $vdiUUID = Set-VDIUUID -vboxManagePath $vboxManagePath -vdiFilePath $vdiFilePath
 
-    # Add the VDI to the VirtualBox media registry
-    Log-Message "Adding VDI to VirtualBox media registry..."
+    # Attach the VDI to the VM
+    Log-Message "Attaching VDI to VM..."
     & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
-    Log-Message "VDI added to VirtualBox media registry."
-
-    # Attach the VDI from the correct path
-    $vdiPath = $vdiFilePath
-    Log-Message "Attaching VDI from $vdiPath..."
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiPath"
     Log-Message "VDI attached successfully."
 
     # Start the VM
