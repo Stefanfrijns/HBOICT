@@ -127,15 +127,8 @@ try {
 
     # Rename the extracted VDI file to VMName.vdi
     $renamedVDIPath = "$tempExtractedPath\$VMName.vdi"
-    if (Test-Path $renamedVDIPath) {
-        $i = 1
-        while (Test-Path "$tempExtractedPath\$VMName($i).vdi") {
-            $i++
-        }
-        $renamedVDIPath = "$tempExtractedPath\$VMName($i).vdi"
-    }
     Log-Message "Renaming VDI file from $vdiFilePath to $renamedVDIPath"
-    Rename-Item -Path $vdiFilePath -NewName "$($renamedVDIPath.Split('\')[-1])"
+    Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
     Log-Message "VDI file renamed to $renamedVDIPath"
 
     # Clone the VDI file to the target directory
