@@ -90,8 +90,8 @@ function Set-VDIUUID {
         $newUUID = [guid]::NewGuid().ToString()
         $uuidCommand = "$vboxManagePath internalcommands sethduuid `"$vdiFilePath`" `"$newUUID`""
         Log-Message "Running UUID command: $uuidCommand"
-        & $vboxManagePath internalcommands sethduuid "$vdiFilePath" "$newUUID"
-        Log-Message "New UUID assigned to $vdiFilePath: $newUUID"
+        & "$vboxManagePath" internalcommands sethduuid "$vdiFilePath" "$newUUID"
+        Log-Message "New UUID assigned to ${vdiFilePath}: $newUUID"
         return $newUUID
     } catch {
         Log-Message "Failed to assign new UUID to $vdiFilePath"
@@ -213,7 +213,7 @@ try {
     Log-Message "VM started successfully."
 }
 catch {
-    Log-Message "An error occurred: $_.Exception.Message"
+    Log-Message "An error occurred: $($_.Exception.Message)"
     throw
 }
 
