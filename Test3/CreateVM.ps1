@@ -87,14 +87,63 @@ function Set-VDIUUID {
         [string]$vdiFilePath
     )
     try {
-        $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`""
+        $newUUID = (New-Guid).Guid
+        $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`" `"$newUUID`""
         Log-Message "Running UUID command: $uuidCommand"
         Invoke-Expression $uuidCommand
-        Log-Message "New UUID assigned to $vdiFilePath"
+        Log-Message "New UUID assigned to $vdiFilePath: $newUUID"
+        return $newUUID
     } catch {
         Log-Message "Failed to assign new UUID to $vdiFilePath"
         throw
     }
+}
+
+# Function to create a .vbox file
+function Create-VBoxFile {
+    param (
+        [string]$vboxFilePath,
+        [string]$vmName,
+        [string]$osType,
+        [int]$memorySize,
+        [int]$cpus,
+        [string]$vdiFilePath,
+        [string]$vdiUUID
+    )
+
+    $vboxContent = @"
+<?xml version="1.0"?>
+<VirtualBox xmlns="http://www.virtualbox.org/" version="1.19-windows">
+  <Machine uuid="{(New-Guid).Guid}" name="$vmName" OSType="$osType" snapshotFolder="Snapshots">
+    <Description>$vmName VirtualBox Image</Description>
+    <MediaRegistry>
+      <HardDisks>
+        <HardDisk uuid="{$vdiUUID}" location="$vdiFilePath" format="VDI" type="Normal"/>
+      </HardDisks>
+    </MediaRegistry>
+    <Hardware>
+      <CPU count="$cpus"/>
+      <Memory RAMSize="$memorySize"/>
+      <Display controller="VMSVGA" VRAMSize="16"/>
+      <Network>
+        <Adapter slot="0" enabled="true" type="82540EM">
+          <NAT/>
+        </Adapter>
+      </Network>
+      <StorageControllers>
+        <StorageController name="SATA" type="AHCI" PortCount="1" useHostIOCache="false" Bootable="true">
+          <AttachedDevice type="HardDisk" port="0" device="0">
+            <Image uuid="{$vdiUUID}"/>
+          </AttachedDevice>
+        </StorageController>
+      </StorageControllers>
+    </Hardware>
+  </Machine>
+</VirtualBox>
+"@
+
+    $vboxContent | Set-Content -Path $vboxFilePath
+    Log-Message "Created .vbox file at $vboxFilePath"
 }
 
 # Log the start of the script
@@ -147,53 +196,16 @@ try {
     }
 
     # Assign a new UUID to the VDI file
-    Set-VDIUUID -vboxManagePath $vboxManagePath -vdiFilePath $vdiFilePath
+    $vdiUUID = Set-VDIUUID -vboxManagePath $vboxManagePath -vdiFilePath $vdiFilePath
 
-    # Wait to ensure the file system is updated
-    Start-Sleep -Seconds 5
+    # Create the .vbox file
+    $vboxFilePath = "$vhdExtractedPath\$VMName.vbox"
+    Create-VBoxFile -vboxFilePath $vboxFilePath -vmName $VMName -osType $OSType -memorySize $MemorySize -cpus $CPUs -vdiFilePath $vdiFilePath -vdiUUID $vdiUUID
 
-    # Create the VM
-    Log-Message "Creating VM..."
-    & "$vboxManagePath" createvm --name $VMName --ostype $OSType --register
-    Log-Message "VM created successfully."
-
-    # Modify VM settings
-    Log-Message "Modifying VM settings..."
-    & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --nic1 nat --vram 16 --graphicscontroller vmsvga
-    Log-Message "VM settings modified successfully."
-
-    # Add storage controller with 1 port
-    Log-Message "Adding storage controller..."
-    & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1 --bootable on
-    Log-Message "Storage controller added successfully."
-
-    # Attach the VDI from the correct path
-    Log-Message "Attaching VDI from $vdiFilePath..."
-    
-    if (-not (Test-Path $vdiFilePath)) {
-        Log-Message "VDI file not found at $vdiFilePath"
-        throw "VDI file not found at $vdiFilePath"
-    }
-    
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
-    Log-Message "VDI attached successfully."
-
-    # Verify attachment
-    $escapedVdiPath = [regex]::Escape($vdiFilePath)
-    $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
-    $vmInfo = Invoke-Expression $verifyCommand
-    Log-Message "VM Info: $vmInfo"
-
-    # Check if the VDI is attached correctly
-    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$escapedVdiPath") {
-        Log-Message "Failed to attach VDI file to the VM."
-        throw "Failed to attach VDI file to the VM."
-    }
-
-    # Configure boot order
-    Log-Message "Configuring boot order..."
-    & "$vboxManagePath" modifyvm $VMName --boot1 disk --boot2 none --boot3 none --boot4 none
-    Log-Message "Boot order configured successfully."
+    # Register the VM
+    Log-Message "Registering VM..."
+    & "$vboxManagePath" registervm "$vboxFilePath"
+    Log-Message "VM registered successfully."
 
     # Start the VM
     Log-Message "Starting VM..."
@@ -206,4 +218,3 @@ catch {
 }
 
 Log-Message "Script execution completed successfully."
-
