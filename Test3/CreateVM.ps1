@@ -74,6 +74,20 @@ function Extract-7z {
     return $vdiFile.FullName
 }
 
+# Remove illegal characters from the VM name
+function Remove-IllegalCharacters {
+    param (
+        [string]$name
+    )
+    $illegalChars = [System.IO.Path]::GetInvalidFileNameChars() + [System.IO.Path]::GetInvalidPathChars()
+    $sanitized = $name -replace "[$illegalChars]", ""
+    return $sanitized
+}
+
+# Sanitize VMName
+$VMName = Remove-IllegalCharacters -name $VMName
+Log-Message "Sanitized VMName: $VMName"
+
 # Log the start of the script
 Log-Message "Script execution started. Parameters: VMName=$VMName, VHDUrl=$VHDUrl, OSType=$OSType, MemorySize=$MemorySize, CPUs=$CPUs"
 
