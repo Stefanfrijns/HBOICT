@@ -39,7 +39,7 @@ function Download-File {
     }
 }
 
-# Function to extract .7z file
+# Function to extract .7z file and return the path of the VDI file
 function Extract-7z {
     param (
         [string]$sevenZipPath,
@@ -50,7 +50,7 @@ function Extract-7z {
         $vdiFile = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1
         if ($vdiFile) {
             Log-Message "VDI file already exists in $outputFolder. Skipping extraction."
-            return $vdiFile.Name
+            return $vdiFile.FullName
         } else {
             Remove-Item -Recurse -Force $outputFolder
         }
@@ -77,7 +77,7 @@ function Extract-7z {
         throw "VDI file not found after extraction. Check $logFilePath for details."
     }
     Log-Message "VDI file extracted to $($vdiFile.FullName)"
-    return $vdiFile.Name
+    return $vdiFile.FullName
 }
 
 # Log the start of the script
@@ -112,19 +112,13 @@ try {
     }
 
     Log-Message "Extracting VHD to $vhdExtractedPath..."
-    $vdiFilename = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $vhdExtractedPath
+    $vdiFilePath = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $vhdExtractedPath
     Log-Message "Extraction process completed."
 
-    if (-not $vdiFilename) {
+    if (-not $vdiFilePath) {
         Log-Message "Extracted VDI file not found in $vhdExtractedPath"
         throw "Extraction failed or VDI file not found."
     }
-
-    # Ensure $vdiFilename is a string, not an array
-    $vdiFilename = $vdiFilename -join ""
-
-    # Construct the full VDI path
-    $vdiFilePath = Join-Path -Path $vhdExtractedPath -ChildPath $vdiFilename
     Log-Message "VDI file path: $vdiFilePath"
 
     # Assign a new UUID to the VDI file
