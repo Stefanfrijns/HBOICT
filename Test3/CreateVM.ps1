@@ -92,10 +92,10 @@ if (-not (Test-Path $sevenZipPath)) {
 }
 
 # Download and extract the VHD
-$downloadsPath = "$env:Public\Downloads"
-$tempExtractedPath = "$downloadsPath\temp"
-$vhdLocalPath = "$env:Public\$VMName.7z"
-$vhdExtractedPath = "C:\Users\Public\LinuxVMs\$VMName"
+[string]$downloadsPath = "$env:Public\Downloads"
+[string]$tempExtractedPath = "$downloadsPath\temp"
+[string]$vhdLocalPath = "$env:Public\$VMName.7z"
+[string]$vhdExtractedPath = "C:\Users\Public\LinuxVMs\$VMName"
 
 try {
     # Ensure the downloads directory exists
