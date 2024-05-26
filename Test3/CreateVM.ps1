@@ -159,6 +159,11 @@ try {
     & "$vboxManagePath" clonevdi "$renamedVDIPath" "$clonedVDIPath"
     Log-Message "VDI cloned successfully to $clonedVDIPath"
 
+    # Remove the original renamed VDI file
+    Log-Message "Removing original renamed VDI file..."
+    Remove-Item -Path $renamedVDIPath -Force
+    Log-Message "Original renamed VDI file removed."
+
     # Create the VM
     Log-Message "Creating VM..."
     & "$vboxManagePath" createvm --name $VMName --ostype $OSType --register
