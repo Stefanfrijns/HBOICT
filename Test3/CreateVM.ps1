@@ -139,10 +139,9 @@ try {
         throw "Extraction failed or VDI file not found."
     }
     Log-Message "VDI file path: $vdiFilePath"
-
-    # Ensure the VDI file path is correct (without extra text)
+   
     $vdiFilePathWithoutMessage = $vdiFilePath.Substring($vdiFilePath.IndexOf(":") + 2)
-    Log-Message "VDI file confirmed at path: $vdiFilePathWithoutMessage"
+    Log-Message "VDI file confirmed at path: $vdiFilePathWithoutMessage
 
     # Create the VM
     Log-Message "Creating VM..."
