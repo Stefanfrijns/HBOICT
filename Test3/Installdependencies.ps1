@@ -80,22 +80,6 @@ function Extract-7z {
     return $vdiFilePath
 }
 
-# Function to rename VDI file
-function Rename-VDIFile {
-    param (
-        [string]$vdiFilePath,
-        [string]$newName
-    )
-    try {
-        $newVdiPath = Join-Path -Path (Split-Path -Parent $vdiFilePath) -ChildPath $newName
-        Move-Item -Path $vdiFilePath -Destination $newVdiPath -Force
-        Log-Message "Renamed VDI file from $vdiFilePath to $newVdiPath"
-        return $newVdiPath
-    } catch {
-        throw "Failed to rename VDI file from $vdiFilePath to $newName"
-    }
-}
-
 # Log the start of the script
 Log-Message "Script execution started. Parameters: VMName=$VMName, VHDUrl=$VHDUrl, OSType=$OSType, MemorySize=$MemorySize, CPUs=$CPUs"
 
@@ -137,13 +121,9 @@ try {
     }
     Log-Message "VDI file found at $vdiFilePath"
 
-    # Rename the VDI file to match the VM name
-    $newVdiPath = Rename-VDIFile -vdiFilePath $vdiFilePath -newName "$VMName.vdi"
-    Log-Message "VDI file renamed to $newVdiPath"
-
     # Assign a new UUID to the VDI file
-    & "$vboxManagePath" internalcommands sethduuid "$newVdiPath"
-    Log-Message "New UUID assigned to $newVdiPath"
+    & "$vboxManagePath" internalcommands sethduuid "$vdiFilePath"
+    Log-Message "New UUID assigned to $vdiFilePath"
 
     # Wait to ensure the file system is updated
     Start-Sleep -Seconds 5
@@ -164,18 +144,18 @@ try {
     Log-Message "Storage controller added successfully."
 
     # Attach the VDI from the correct path
-    Log-Message "Attaching VDI from $newVdiPath..."
+    Log-Message "Attaching VDI from $vdiFilePath..."
     
-    if (-not (Test-Path $newVdiPath)) {
-        Log-Message "VDI file not found at $newVdiPath"
-        throw "VDI file not found at $newVdiPath"
+    if (-not (Test-Path $vdiFilePath)) {
+        Log-Message "VDI file not found at $vdiFilePath"
+        throw "VDI file not found at $vdiFilePath"
     }
     
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$newVdiPath"
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
     Log-Message "VDI attached successfully."
 
     # Verify attachment
-    $escapedVdiPath = [regex]::Escape($newVdiPath)
+    $escapedVdiPath = [regex]::Escape($vdiFilePath)
     $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
     $vmInfo = Invoke-Expression $verifyCommand
     Log-Message "VM Info: $vmInfo"
