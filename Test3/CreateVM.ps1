@@ -123,7 +123,7 @@ try {
 
     # Rename the VDI file to match the VM name
     $newVdiPath = Join-Path -Path $vhdExtractedPath -ChildPath "$VMName.vdi"
-    Rename-Item -Path $vdiFilePath -NewName $newVdiPath
+    Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
     Log-Message "VDI file renamed to $newVdiPath"
 
     # Wait to ensure the file system is updated
