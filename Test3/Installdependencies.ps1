@@ -46,10 +46,10 @@ function Extract-7z {
         [string]$outputFolder
     )
     if (Test-Path $outputFolder) {
-        $vdiFilePath = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1
+        $vdiFilePath = (Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1).FullName
         if ($vdiFilePath) {
             Write-Output "VDI file already exists in $outputFolder. Skipping extraction."
-            return $vdiFilePath.FullName
+            return $vdiFilePath
         } else {
             Remove-Item -Recurse -Force $outputFolder
         }
@@ -71,11 +71,11 @@ function Extract-7z {
     $process.WaitForExit()
     $output | Add-Content -Path $logFilePath
 
-    $vdiFilePath = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1
+    $vdiFilePath = (Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1).FullName
     if (-not $vdiFilePath) {
         throw "VDI file not found after extraction. Check $logFilePath for details."
     }
-    return $vdiFilePath.FullName
+    return $vdiFilePath
 }
 
 # Function to rename VDI file
