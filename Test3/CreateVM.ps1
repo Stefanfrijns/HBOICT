@@ -142,6 +142,7 @@ try {
     Log-Message "Validated VDI file path: $vdiFilePath"
 
     # Rename the extracted VDI file to VMName.vdi
+    $vdiFilename = [System.IO.Path]::GetFileName($vdiFilePath)
     $renamedVDIPath = "$tempExtractedPath\$VMName.vdi"
     Log-Message "Renaming VDI file from $vdiFilePath to $renamedVDIPath"
     Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
