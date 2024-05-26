@@ -148,6 +148,11 @@ try {
     Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
     Log-Message "VDI file renamed to $renamedVDIPath"
 
+    # Ensure the target directory exists
+    if (-not (Test-Path $vhdExtractedPath)) {
+        New-Item -ItemType Directory -Force -Path $vhdExtractedPath
+    }
+
     # Clone the VDI file to the target directory
     $clonedVDIPath = "$vhdExtractedPath\$VMName.vdi"
     Log-Message "Cloning VDI to $clonedVDIPath..."
@@ -184,5 +189,4 @@ catch {
     throw
 }
 
-echo $vdiFilePath
 Log-Message "Script execution completed successfully."
