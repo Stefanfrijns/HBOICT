@@ -78,6 +78,21 @@ function Extract-7z {
     return $vdiFilePath
 }
 
+# Function to rename VDI file
+function Rename-VDIFile {
+    param (
+        [string]$vdiFilePath,
+        [string]$newName
+    )
+    try {
+        $newVdiPath = Join-Path -Path (Split-Path -Parent $vdiFilePath) -ChildPath $newName
+        Move-Item -Path $vdiFilePath -Destination $newVdiPath -Force
+        return $newVdiPath
+    } catch {
+        throw "Failed to rename VDI file from $vdiFilePath to $newName"
+    }
+}
+
 # Log the start of the script
 Log-Message "Script execution started. Parameters: VMName=$VMName, VHDUrl=$VHDUrl, OSType=$OSType, MemorySize=$MemorySize, CPUs=$CPUs"
 
@@ -120,9 +135,12 @@ try {
     Log-Message "VDI file found at $($vdiFilePath.FullName)"
 
     # Rename the VDI file to match the VM name
-    $newVdiPath = Join-Path -Path $vhdExtractedPath -ChildPath "$VMName.vdi"
-    Move-Item -Path $vdiFilePath.FullName -Destination $newVdiPath
+    $newVdiPath = Rename-VDIFile -vdiFilePath $vdiFilePath.FullName -newName "$VMName.vdi"
     Log-Message "VDI file renamed to $newVdiPath"
+
+    # Assign a new UUID to the VDI file
+    & "$vboxManagePath" internalcommands sethduuid "$newVdiPath"
+    Log-Message "New UUID assigned to $newVdiPath"
 
     # Wait to ensure the file system is updated
     Start-Sleep -Seconds 5
