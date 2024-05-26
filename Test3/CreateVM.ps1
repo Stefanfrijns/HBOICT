@@ -119,6 +119,11 @@ try {
     }
     Log-Message "VDI file found at $($vdiFilePath.FullName)"
 
+    # Rename the VDI file to match the VM name
+    $newVdiPath = Join-Path -Path $vdiFilePath.DirectoryName -ChildPath "$VMName.vdi"
+    Rename-Item -Path $vdiFilePath.FullName -NewName $newVdiPath
+    Log-Message "VDI file renamed to $newVdiPath"
+
     # Wait to ensure the file system is updated
     Start-Sleep -Seconds 5
 
@@ -138,19 +143,18 @@ try {
     Log-Message "Storage controller added successfully."
 
     # Attach the VDI from the correct path
-    $vdiPath = $vdiFilePath.FullName
-    Log-Message "Attaching VDI from $vdiPath..."
+    Log-Message "Attaching VDI from $newVdiPath..."
     
-    if (-not (Test-Path $vdiPath)) {
-        Log-Message "VDI file not found at $vdiPath"
-        throw "VDI file not found at $vdiPath"
+    if (-not (Test-Path $newVdiPath)) {
+        Log-Message "VDI file not found at $newVdiPath"
+        throw "VDI file not found at $newVdiPath"
     }
     
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiPath"
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$newVdiPath"
     Log-Message "VDI attached successfully."
 
     # Verify attachment
-    $escapedVdiPath = [regex]::Escape($vdiPath)
+    $escapedVdiPath = [regex]::Escape($newVdiPath)
     $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
     $vmInfo = Invoke-Expression $verifyCommand
     Log-Message "VM Info: $vmInfo"
