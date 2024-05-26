@@ -122,6 +122,9 @@ try {
     }
     Log-Message "VDI file path: $vdiFilePath"
 
+    # Ensure $vdiFilePath is a string
+    $vdiFilePath = $vdiFilePath -join ""
+
     # Rename the extracted VDI file to VMName.vdi
     $renamedVDIPath = "$tempExtractedPath\$VMName.vdi"
     if (Test-Path $renamedVDIPath) {
@@ -132,7 +135,7 @@ try {
         $renamedVDIPath = "$tempExtractedPath\$VMName($i).vdi"
     }
     Log-Message "Renaming VDI file from $vdiFilePath to $renamedVDIPath"
-    Rename-Item -Path $vdiFilePath -NewName $renamedVDIPath
+    Rename-Item -Path $vdiFilePath -NewName "$($renamedVDIPath.Split('\')[-1])"
     Log-Message "VDI file renamed to $renamedVDIPath"
 
     # Clone the VDI file to the target directory
