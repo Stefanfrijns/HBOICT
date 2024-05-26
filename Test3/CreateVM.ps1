@@ -139,8 +139,7 @@ try {
     # Ensure $vdiFilePath is a string and correct
     $vdiFilePath = $vdiFilePath -join ""
     $vdiFilePath = $vdiFilePath.Trim()
-    $vdiFilePath = $vdiFilePath.Replace("`r`n", "")
-    $vdiFilePath = $vdiFilePath.Split(" ") | Select-Object -Last 1
+    $vdiFilePath = $vdiFilePath -replace ".*(C:\\Users\\Public\\Downloads\\.*?\\.*?\.vdi).*", '$1'
     Log-Message "Validated VDI file path: $vdiFilePath"
 
     # Rename the extracted VDI file to VMName.vdi
