@@ -80,6 +80,23 @@ function Extract-7z {
     return $vdiFile.FullName
 }
 
+# Function to set a new UUID for a VDI file
+function Set-VDIUUID {
+    param (
+        [string]$vboxManagePath,
+        [string]$vdiFilePath
+    )
+    try {
+        $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`""
+        Log-Message "Running UUID command: $uuidCommand"
+        Invoke-Expression $uuidCommand
+        Log-Message "New UUID assigned to $vdiFilePath"
+    } catch {
+        Log-Message "Failed to assign new UUID to $vdiFilePath"
+        throw
+    }
+}
+
 # Log the start of the script
 Log-Message "Script execution started. Parameters: VMName=$VMName, VHDUrl=$VHDUrl, OSType=$OSType, MemorySize=$MemorySize, CPUs=$CPUs"
 
@@ -130,10 +147,7 @@ try {
     }
 
     # Assign a new UUID to the VDI file
-    $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`""
-    Log-Message "Running UUID command: $uuidCommand"
-    Invoke-Expression $uuidCommand
-    Log-Message "New UUID assigned to $vdiFilePath"
+    Set-VDIUUID -vboxManagePath $vboxManagePath -vdiFilePath $vdiFilePath
 
     # Wait to ensure the file system is updated
     Start-Sleep -Seconds 5
