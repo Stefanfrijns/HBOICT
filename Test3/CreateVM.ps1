@@ -66,7 +66,7 @@ function Extract-7z {
     $process.WaitForExit()
     $output | Add-Content -Path $logFilePath
 
-    $vdiFile = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -Last 1
+    $vdiFile = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1
     if (-not $vdiFile) {
         throw "VDI file not found after extraction. Check $logFilePath for details."
     }
@@ -150,9 +150,7 @@ try {
     # Clone the VDI file to the target directory
     $clonedVDIPath = "$vhdExtractedPath\$VMName.vdi"
     Log-Message "Cloning VDI to $clonedVDIPath..."
-    $cloneCommand = "& `"$vboxManagePath`" clonevdi `"$renamedVDIPath`" `"$clonedVDIPath`""
-    Log-Message "Running clone command: $cloneCommand"
-    Invoke-Expression $cloneCommand
+    & "$vboxManagePath" clonevdi "$renamedVDIPath" "$clonedVDIPath"
     Log-Message "VDI cloned successfully to $clonedVDIPath"
 
     # Create the VM
@@ -172,16 +170,12 @@ try {
 
     # Attach the VDI to the VM
     Log-Message "Attaching VDI to VM..."
-    $storageAttachCommand = "& `"$vboxManagePath`" storageattach `"$VMName`" --storagectl `"SATA_Controller`" --port 0 --device 0 --type hdd --medium `"$clonedVDIPath`""
-    Log-Message "Running storage attach command: $storageAttachCommand"
-    Invoke-Expression $storageAttachCommand
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$clonedVDIPath"
     Log-Message "VDI attached successfully."
 
     # Start the VM
     Log-Message "Starting VM..."
-    $startVMCommand = "& `"$vboxManagePath`" startvm `"$VMName`" --type headless"
-    Log-Message "Running start VM command: $startVMCommand"
-    Invoke-Expression $startVMCommand
+    & "$vboxManagePath" startvm $VMName --type headless
     Log-Message "VM started successfully."
 }
 catch {
@@ -189,5 +183,4 @@ catch {
     throw
 }
 
-echo $vdiFilePath
 Log-Message "Script execution completed successfully."
