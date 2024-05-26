@@ -139,9 +139,14 @@ try {
         throw "Extraction failed or VDI file not found."
     }
     Log-Message "VDI file path: $vdiFilePath"
-   
-    $vdiFilePathWithoutMessage = $vdiFilePath.Substring($vdiFilePath.IndexOf(":") + 2)
-    Log-Message "VDI file confirmed at path: $vdiFilePathWithoutMessage
+
+    # Ensure the VDI file path is correct
+    if (Test-Path $vdiFilePath) {
+        Log-Message "VDI file confirmed at path: $vdiFilePath"
+    } else {
+        Log-Message "VDI file not found at path: $vdiFilePath"
+        throw "VDI file not found at path: $vdiFilePath"
+    }
 
     # Create the VM
     Log-Message "Creating VM..."
@@ -163,7 +168,7 @@ try {
 
     # Attach the VDI to the VM
     Log-Message "Attaching VDI to VM..."
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiFilePathWithoutMessage"
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
     Log-Message "VDI attached successfully."
 
     # Start the VM
