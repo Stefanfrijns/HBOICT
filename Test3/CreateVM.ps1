@@ -94,7 +94,7 @@ if (-not (Test-Path $sevenZipPath)) {
 # Download and extract the VHD
 $downloadsPath = "$env:Public\Downloads"
 $tempExtractedPath = "$downloadsPath\temp"
-$vhdLocalPath = "$downloadsPath\$VMName.7z"
+$vhdLocalPath = "$env:Public\$VMName.7z"
 $vhdExtractedPath = "C:\Users\Public\LinuxVMs\$VMName"
 
 try {
@@ -122,10 +122,15 @@ try {
     }
     Log-Message "VDI file path: $vdiFilePath"
 
+    # Rename the extracted VDI file to VMName.vdi
+    $renamedVDIPath = "$tempExtractedPath\$VMName.vdi"
+    Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
+    Log-Message "VDI file renamed to $renamedVDIPath"
+
     # Clone the VDI file to the target directory
     $clonedVDIPath = "$vhdExtractedPath\$VMName.vdi"
     Log-Message "Cloning VDI to $clonedVDIPath..."
-    $cloneCommand = "& `"$vboxManagePath`" clonevdi `"$vdiFilePath`" `"$clonedVDIPath`""
+    $cloneCommand = "& `"$vboxManagePath`" clonevdi `"$renamedVDIPath`" `"$clonedVDIPath`""
     Log-Message "Running clone command: $cloneCommand"
     Invoke-Expression $cloneCommand
     Log-Message "VDI cloned successfully to $clonedVDIPath"
