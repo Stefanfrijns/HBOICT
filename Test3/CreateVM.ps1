@@ -186,5 +186,5 @@ catch {
     Log-Message "An error occurred: $($_.Exception.Message)"
     throw
 }
-
+echo $vdiFilePath
 Log-Message "Script execution completed successfully."
