@@ -88,62 +88,15 @@ function Set-VDIUUID {
     )
     try {
         $newUUID = [guid]::NewGuid().ToString()
-        $uuidCommand = "$vboxManagePath internalcommands sethduuid `"$vdiFilePath`" `"$newUUID`""
+        $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`" `"$newUUID`""
         Log-Message "Running UUID command: $uuidCommand"
-        & "$vboxManagePath" internalcommands sethduuid "$vdiFilePath" "$newUUID"
+        Invoke-Expression $uuidCommand
         Log-Message "New UUID assigned to ${vdiFilePath}: $newUUID"
         return $newUUID
     } catch {
         Log-Message "Failed to assign new UUID to $vdiFilePath"
         throw
     }
-}
-
-# Function to create a .vbox file
-function Create-VBoxFile {
-    param (
-        [string]$vboxFilePath,
-        [string]$vmName,
-        [string]$osType,
-        [int]$memorySize,
-        [int]$cpus,
-        [string]$vdiFilePath,
-        [string]$vdiUUID
-    )
-
-    $vboxContent = @"
-<?xml version="1.0"?>
-<VirtualBox xmlns="http://www.virtualbox.org/" version="1.19-windows">
-  <Machine uuid="{$([guid]::NewGuid())}" name="$vmName" OSType="$osType" snapshotFolder="Snapshots">
-    <Description>$vmName VirtualBox Image</Description>
-    <MediaRegistry>
-      <HardDisks>
-        <HardDisk uuid="{$vdiUUID}" location="$vdiFilePath" format="VDI" type="Normal"/>
-      </HardDisks>
-    </MediaRegistry>
-    <Hardware>
-      <CPU count="$cpus"/>
-      <Memory RAMSize="$memorySize"/>
-      <Display controller="VMSVGA" VRAMSize="16"/>
-      <Network>
-        <Adapter slot="0" enabled="true" type="82540EM">
-          <NAT/>
-        </Adapter>
-      </Network>
-      <StorageControllers>
-        <StorageController name="SATA" type="AHCI" PortCount="1" useHostIOCache="false" Bootable="true">
-          <AttachedDevice type="HardDisk" port="0" device="0">
-            <Image uuid="{$vdiUUID}"/>
-          </AttachedDevice>
-        </StorageController>
-      </StorageControllers>
-    </Hardware>
-  </Machine>
-</VirtualBox>
-"@
-
-    $vboxContent | Set-Content -Path $vboxFilePath
-    Log-Message "Created .vbox file at $vboxFilePath"
 }
 
 # Log the start of the script
@@ -198,14 +151,31 @@ try {
     # Assign a new UUID to the VDI file
     $vdiUUID = Set-VDIUUID -vboxManagePath $vboxManagePath -vdiFilePath $vdiFilePath
 
-    # Create the .vbox file
-    $vboxFilePath = "$vhdExtractedPath\$VMName.vbox"
-    Create-VBoxFile -vboxFilePath $vboxFilePath -vmName $VMName -osType $OSType -memorySize $MemorySize -cpus $CPUs -vdiFilePath $vdiFilePath -vdiUUID $vdiUUID
+    # Add the VDI to the VirtualBox media registry
+    Log-Message "Adding VDI to VirtualBox media registry..."
+    & "$vboxManagePath" storageattach "$VMName" --storagectl "SATA" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
+    Log-Message "VDI added to VirtualBox media registry."
 
-    # Register the VM
-    Log-Message "Registering VM..."
-    & "$vboxManagePath" registervm "$vboxFilePath"
-    Log-Message "VM registered successfully."
+    # Create the VM
+    Log-Message "Creating VM..."
+    & "$vboxManagePath" createvm --name $VMName --ostype $OSType --register
+    Log-Message "VM created successfully."
+
+    # Modify VM settings
+    Log-Message "Modifying VM settings..."
+    & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --nic1 nat --vram 16 --graphicscontroller vmsvga
+    Log-Message "VM settings modified successfully."
+
+    # Add storage controller with 1 port
+    Log-Message "Adding storage controller..."
+    & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1 --bootable on
+    Log-Message "Storage controller added successfully."
+
+    # Attach the VDI from the correct path
+    $vdiPath = $vdiFilePath
+    Log-Message "Attaching VDI from $vdiPath..."
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiPath"
+    Log-Message "VDI attached successfully."
 
     # Start the VM
     Log-Message "Starting VM..."
@@ -213,7 +183,7 @@ try {
     Log-Message "VM started successfully."
 }
 catch {
-    Log-Message "An error occurred: $($_.Exception.Message)"
+    Log-Message "An error occurred: $_.Exception.Message"
     throw
 }
 
