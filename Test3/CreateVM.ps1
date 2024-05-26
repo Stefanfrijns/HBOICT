@@ -189,5 +189,5 @@ catch {
     throw
 }
 
-echo $vdiFilePath
+$vdiFilePath
 Log-Message "Script execution completed successfully."
