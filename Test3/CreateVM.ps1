@@ -47,10 +47,10 @@ function Extract-7z {
         [string]$outputFolder
     )
     if (Test-Path $outputFolder) {
-        $vdiFilePath = (Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1).FullName
-        if ($vdiFilePath) {
+        $vdiFile = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1
+        if ($vdiFile) {
             Log-Message "VDI file already exists in $outputFolder. Skipping extraction."
-            return $vdiFilePath
+            return $vdiFile.Name
         } else {
             Remove-Item -Recurse -Force $outputFolder
         }
@@ -76,9 +76,8 @@ function Extract-7z {
     if (-not $vdiFile) {
         throw "VDI file not found after extraction. Check $logFilePath for details."
     }
-    $vdiFilePath = $vdiFile.FullName
-    Log-Message "VDI file extracted to $vdiFilePath"
-    return $vdiFilePath
+    Log-Message "VDI file extracted to $($vdiFile.FullName)"
+    return $vdiFile.Name
 }
 
 # Log the start of the script
@@ -113,14 +112,17 @@ try {
     }
 
     Log-Message "Extracting VHD to $vhdExtractedPath..."
-    $vdiFilePath = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $vhdExtractedPath
+    $vdiFilename = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $vhdExtractedPath
     Log-Message "Extraction process completed."
 
-    if (-not $vdiFilePath) {
+    if (-not $vdiFilename) {
         Log-Message "Extracted VDI file not found in $vhdExtractedPath"
         throw "Extraction failed or VDI file not found."
     }
-    Log-Message "VDI file found at $vdiFilePath"
+
+    # Construct the full VDI path
+    $vdiFilePath = "$vhdExtractedPath\$vdiFilename"
+    Log-Message "VDI file path: $vdiFilePath"
 
     # Assign a new UUID to the VDI file
     & "$vboxManagePath" internalcommands sethduuid "$vdiFilePath"
