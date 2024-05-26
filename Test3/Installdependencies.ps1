@@ -71,6 +71,8 @@ function Extract-7z {
     $process.WaitForExit()
     $output | Add-Content -Path $logFilePath
 
+    Start-Sleep -Seconds 5 # Ensure filesystem update
+
     $vdiFilePath = (Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1).FullName
     if (-not $vdiFilePath) {
         throw "VDI file not found after extraction. Check $logFilePath for details."
@@ -137,6 +139,8 @@ try {
     # Rename the VDI file to match the VM name
     $newVdiPath = Rename-VDIFile -vdiFilePath $vdiFilePath -newName "$VMName.vdi"
     Log-Message "VDI file renamed to $newVdiPath"
+
+    Start-Sleep -Seconds 5 # Ensure filesystem update
 
     # Assign a new UUID to the VDI file
     & "$vboxManagePath" internalcommands sethduuid "$newVdiPath"
