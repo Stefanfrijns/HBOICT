@@ -71,7 +71,7 @@ function Extract-7z {
         throw "VDI file not found after extraction. Check $logFilePath for details."
     }
     Log-Message "VDI file extracted to $($vdiFile.FullName)"
-    return $vdiFile.FullName
+    return $vdiFile
 }
 
 # Remove illegal characters from the VM name
@@ -127,13 +127,14 @@ try {
     }
 
     Log-Message "Extracting VHD to $tempExtractedPath..."
-    $vdiFilePath = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $tempExtractedPath
+    $vdiFile = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $tempExtractedPath
     Log-Message "Extraction process completed."
 
-    if (-not $vdiFilePath) {
+    if (-not $vdiFile) {
         Log-Message "Extracted VDI file not found in $tempExtractedPath"
         throw "Extraction failed or VDI file not found."
     }
+    $vdiFilePath = $vdiFile.FullName
     Log-Message "VDI file path: $vdiFilePath"
 
     # Ensure $vdiFilePath is a string and correct
@@ -142,7 +143,6 @@ try {
     Log-Message "Validated VDI file path: $vdiFilePath"
 
     # Rename the extracted VDI file to VMName.vdi
-    $vdiFilename = [System.IO.Path]::GetFileName($vdiFilePath)
     $renamedVDIPath = "$tempExtractedPath\$VMName.vdi"
     Log-Message "Renaming VDI file from $vdiFilePath to $renamedVDIPath"
     Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
@@ -184,4 +184,5 @@ catch {
     throw
 }
 
+echo $vdiFilePath 
 Log-Message "Script execution completed successfully."
