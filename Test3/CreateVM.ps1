@@ -120,6 +120,9 @@ try {
         throw "Extraction failed or VDI file not found."
     }
 
+    # Ensure $vdiFilename is a string, not an array
+    $vdiFilename = $vdiFilename -join ""
+
     # Construct the full VDI path
     $vdiFilePath = Join-Path -Path $vhdExtractedPath -ChildPath $vdiFilename
     Log-Message "VDI file path: $vdiFilePath"
