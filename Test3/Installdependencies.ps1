@@ -32,6 +32,7 @@ function Download-File {
     try {
         $client = New-Object System.Net.WebClient
         $client.DownloadFile($url, $output)
+        Log-Message "Downloaded file from $url to $output"
     } catch {
         Log-Message "Failed to download file from $url to $output"
         throw
@@ -48,7 +49,7 @@ function Extract-7z {
     if (Test-Path $outputFolder) {
         $vdiFilePath = (Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1).FullName
         if ($vdiFilePath) {
-            Write-Output "VDI file already exists in $outputFolder. Skipping extraction."
+            Log-Message "VDI file already exists in $outputFolder. Skipping extraction."
             return $vdiFilePath
         } else {
             Remove-Item -Recurse -Force $outputFolder
@@ -71,12 +72,11 @@ function Extract-7z {
     $process.WaitForExit()
     $output | Add-Content -Path $logFilePath
 
-    Start-Sleep -Seconds 5 # Ensure filesystem update
-
     $vdiFilePath = (Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1).FullName
     if (-not $vdiFilePath) {
         throw "VDI file not found after extraction. Check $logFilePath for details."
     }
+    Log-Message "VDI file extracted to $vdiFilePath"
     return $vdiFilePath
 }
 
@@ -89,6 +89,7 @@ function Rename-VDIFile {
     try {
         $newVdiPath = Join-Path -Path (Split-Path -Parent $vdiFilePath) -ChildPath $newName
         Move-Item -Path $vdiFilePath -Destination $newVdiPath -Force
+        Log-Message "Renamed VDI file from $vdiFilePath to $newVdiPath"
         return $newVdiPath
     } catch {
         throw "Failed to rename VDI file from $vdiFilePath to $newName"
@@ -139,8 +140,6 @@ try {
     # Rename the VDI file to match the VM name
     $newVdiPath = Rename-VDIFile -vdiFilePath $vdiFilePath -newName "$VMName.vdi"
     Log-Message "VDI file renamed to $newVdiPath"
-
-    Start-Sleep -Seconds 5 # Ensure filesystem update
 
     # Assign a new UUID to the VDI file
     & "$vboxManagePath" internalcommands sethduuid "$newVdiPath"
