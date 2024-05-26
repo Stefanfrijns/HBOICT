@@ -66,7 +66,7 @@ function Extract-7z {
     $process.WaitForExit()
     $output | Add-Content -Path $logFilePath
 
-    $vdiFile = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1
+    $vdiFile = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -Last 1
     if (-not $vdiFile) {
         throw "VDI file not found after extraction. Check $logFilePath for details."
     }
@@ -189,5 +189,5 @@ catch {
     throw
 }
 
-$vdiFilePath
+echo $vdiFilePath
 Log-Message "Script execution completed successfully."
