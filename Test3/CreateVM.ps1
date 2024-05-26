@@ -136,8 +136,10 @@ try {
     }
     Log-Message "VDI file path: $vdiFilePath"
 
-    # Ensure $vdiFilePath is a string
+    # Ensure $vdiFilePath is a string and correct
     $vdiFilePath = $vdiFilePath -join ""
+    $vdiFilePath = $vdiFilePath.Trim()
+    Log-Message "Validated VDI file path: $vdiFilePath"
 
     # Rename the extracted VDI file to VMName.vdi
     $renamedVDIPath = "$tempExtractedPath\$VMName.vdi"
@@ -186,5 +188,6 @@ catch {
     Log-Message "An error occurred: $($_.Exception.Message)"
     throw
 }
+
 echo $vdiFilePath
 Log-Message "Script execution completed successfully."
