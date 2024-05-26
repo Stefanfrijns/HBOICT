@@ -87,7 +87,7 @@ function Set-VDIUUID {
         [string]$vdiFilePath
     )
     try {
-        $newUUID = [guid]::NewGuid().Guid
+        $newUUID = [guid]::NewGuid().ToString()
         $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`" `"$newUUID`""
         Log-Message "Running UUID command: $uuidCommand"
         Invoke-Expression $uuidCommand
