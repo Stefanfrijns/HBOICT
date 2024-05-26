@@ -117,13 +117,11 @@ try {
         Log-Message "Extracted VDI file not found in $vhdExtractedPath"
         throw "Extraction failed or VDI file not found."
     }
-
-    $vdiFilePath = $vdiFilePath.FullName
-    Log-Message "VDI file found at $vdiFilePath"
+    Log-Message "VDI file found at $($vdiFilePath.FullName)"
 
     # Rename the VDI file to match the VM name
     $newVdiPath = Join-Path -Path $vhdExtractedPath -ChildPath "$VMName.vdi"
-    Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
+    Rename-Item -Path $vdiFilePath.FullName -NewName $newVdiPath
     Log-Message "VDI file renamed to $newVdiPath"
 
     # Wait to ensure the file system is updated
