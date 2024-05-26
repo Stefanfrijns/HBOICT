@@ -80,25 +80,6 @@ function Extract-7z {
     return $vdiFile.FullName
 }
 
-# Function to set a new UUID for a VDI file
-function Set-VDIUUID {
-    param (
-        [string]$vboxManagePath,
-        [string]$vdiFilePath
-    )
-    try {
-        $newUUID = [guid]::NewGuid().ToString()
-        $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`" `"$newUUID`""
-        Log-Message "Running UUID command: $uuidCommand"
-        Invoke-Expression $uuidCommand
-        Log-Message "New UUID assigned to ${vdiFilePath}: $newUUID"
-        return $newUUID
-    } catch {
-        Log-Message "Failed to assign new UUID to $vdiFilePath"
-        throw
-    }
-}
-
 # Log the start of the script
 Log-Message "Script execution started. Parameters: VMName=$VMName, VHDUrl=$VHDUrl, OSType=$OSType, MemorySize=$MemorySize, CPUs=$CPUs"
 
@@ -149,9 +130,8 @@ try {
     }
 
     # Create the VM
-    $vmUUID = [guid]::NewGuid().ToString()
-    Log-Message "Creating VM with UUID $vmUUID..."
-    & "$vboxManagePath" createvm --name $VMName --ostype $OSType --uuid $vmUUID --register
+    Log-Message "Creating VM..."
+    & "$vboxManagePath" createvm --name $VMName --ostype $OSType --register
     Log-Message "VM created successfully."
 
     # Modify VM settings
@@ -165,7 +145,10 @@ try {
     Log-Message "Storage controller added successfully."
 
     # Assign a new UUID to the VDI file
-    $vdiUUID = Set-VDIUUID -vboxManagePath $vboxManagePath -vdiFilePath $vdiFilePath
+    $newUUID = [guid]::NewGuid().ToString()
+    Log-Message "Assigning new UUID to VDI file..."
+    & "$vboxManagePath" internalcommands sethduuid "$vdiFilePath" "$newUUID"
+    Log-Message "New UUID assigned to $vdiFilePath"
 
     # Attach the VDI to the VM
     Log-Message "Attaching VDI to VM..."
