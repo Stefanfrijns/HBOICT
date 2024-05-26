@@ -91,7 +91,7 @@ function Set-VDIUUID {
         $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`" `"$newUUID`""
         Log-Message "Running UUID command: $uuidCommand"
         Invoke-Expression $uuidCommand
-        Log-Message "New UUID assigned to $vdiFilePath: $newUUID"
+        Log-Message "New UUID assigned to ${vdiFilePath}: $newUUID"
         return $newUUID
     } catch {
         Log-Message "Failed to assign new UUID to $vdiFilePath"
@@ -151,6 +151,11 @@ try {
     # Assign a new UUID to the VDI file
     $vdiUUID = Set-VDIUUID -vboxManagePath $vboxManagePath -vdiFilePath $vdiFilePath
 
+    # Add the VDI to the VirtualBox media registry
+    Log-Message "Adding VDI to VirtualBox media registry..."
+    & "$vboxManagePath" storageattach "$VMName" --storagectl "SATA" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
+    Log-Message "VDI added to VirtualBox media registry."
+
     # Create the VM
     Log-Message "Creating VM..."
     & "$vboxManagePath" createvm --name $VMName --ostype $OSType --register
@@ -178,7 +183,7 @@ try {
     Log-Message "VM started successfully."
 }
 catch {
-    Log-Message "An error occurred: $($_.Exception.Message)"
+    Log-Message "An error occurred: $_.Exception.Message"
     throw
 }
 
