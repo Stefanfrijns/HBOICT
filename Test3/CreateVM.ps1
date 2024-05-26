@@ -39,7 +39,7 @@ function Download-File {
     }
 }
 
-# Function to extract .7z file and return the path of the VDI file
+# Function to extract .7z file
 function Extract-7z {
     param (
         [string]$sevenZipPath,
@@ -98,10 +98,17 @@ if (-not (Test-Path $sevenZipPath)) {
 }
 
 # Download and extract the VHD
-$vhdLocalPath = "$env:Public\$VMName.7z"
+$downloadsPath = "$env:Public\Downloads"
+$tempExtractedPath = "$downloadsPath\temp"
+$vhdLocalPath = "$downloadsPath\$VMName.7z"
 $vhdExtractedPath = "C:\Users\Public\LinuxVMs\$VMName"
 
 try {
+    # Ensure the downloads directory exists
+    if (-not (Test-Path $downloadsPath)) {
+        New-Item -ItemType Directory -Force -Path $downloadsPath
+    }
+
     # Check if the file already exists
     if (Test-Path $vhdLocalPath) {
         Log-Message "VHD archive file already exists at $vhdLocalPath. Skipping download."
@@ -111,23 +118,23 @@ try {
         Log-Message "Download completed. File size: $((Get-Item $vhdLocalPath).Length) bytes"
     }
 
-    Log-Message "Extracting VHD to $vhdExtractedPath..."
-    $vdiFilePath = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $vhdExtractedPath
+    Log-Message "Extracting VHD to $tempExtractedPath..."
+    $vdiFilePath = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $tempExtractedPath
     Log-Message "Extraction process completed."
 
     if (-not $vdiFilePath) {
-        Log-Message "Extracted VDI file not found in $vhdExtractedPath"
+        Log-Message "Extracted VDI file not found in $tempExtractedPath"
         throw "Extraction failed or VDI file not found."
     }
     Log-Message "VDI file path: $vdiFilePath"
 
-    # Ensure the VDI file path is correct
-    if (Test-Path $vdiFilePath) {
-        Log-Message "VDI file confirmed at path: $vdiFilePath"
-    } else {
-        Log-Message "VDI file not found at path: $vdiFilePath"
-        throw "VDI file not found at path: $vdiFilePath"
-    }
+    # Clone the VDI file to the target directory
+    $clonedVDIPath = "$vhdExtractedPath\$VMName.vdi"
+    Log-Message "Cloning VDI to $clonedVDIPath..."
+    $cloneCommand = "& `"$vboxManagePath`" clonevdi `"$vdiFilePath`" `"$clonedVDIPath`""
+    Log-Message "Running clone command: $cloneCommand"
+    Invoke-Expression $cloneCommand
+    Log-Message "VDI cloned successfully to $clonedVDIPath"
 
     # Create the VM
     Log-Message "Creating VM..."
@@ -144,20 +151,18 @@ try {
     & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1 --bootable on
     Log-Message "Storage controller added successfully."
 
-    # Assign a new UUID to the VDI file
-    $newUUID = [guid]::NewGuid().ToString()
-    Log-Message "Assigning new UUID to VDI file..."
-    & "$vboxManagePath" internalcommands sethduuid "$vdiFilePath" "$newUUID"
-    Log-Message "New UUID assigned to $vdiFilePath"
-
     # Attach the VDI to the VM
     Log-Message "Attaching VDI to VM..."
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
+    $storageAttachCommand = "& `"$vboxManagePath`" storageattach `"$VMName`" --storagectl `"SATA_Controller`" --port 0 --device 0 --type hdd --medium `"$clonedVDIPath`""
+    Log-Message "Running storage attach command: $storageAttachCommand"
+    Invoke-Expression $storageAttachCommand
     Log-Message "VDI attached successfully."
 
     # Start the VM
     Log-Message "Starting VM..."
-    & "$vboxManagePath" startvm $VMName --type headless
+    $startVMCommand = "& `"$vboxManagePath`" startvm `"$VMName`" --type headless"
+    Log-Message "Running start VM command: $startVMCommand"
+    Invoke-Expression $startVMCommand
     Log-Message "VM started successfully."
 }
 catch {
