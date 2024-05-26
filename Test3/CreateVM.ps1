@@ -147,7 +147,7 @@ try {
     # Assign a new UUID to the VDI file
     $newUUID = [guid]::NewGuid().ToString()
     Log-Message "Assigning new UUID to VDI file..."
-    & C:\Program Files\Oracle\VirtualBox\VBOXMANAGE.EXE internalcommands sethduuid "$vdiFilePath" "$newUUID"
+    & Vboxmanage internalcommands sethduuid "$vdiFilePath" "$newUUID"
     Log-Message "New UUID assigned to $vdiFilePath"
 
     # Attach the VDI to the VM
