@@ -148,14 +148,6 @@ try {
         throw "VDI file not found at path: $vdiFilePath"
     }
 
-    # Assign a new UUID to the VDI file
-    $vdiUUID = Set-VDIUUID -vboxManagePath $vboxManagePath -vdiFilePath $vdiFilePath
-
-    # Add the VDI to the VirtualBox media registry
-    Log-Message "Adding VDI to VirtualBox media registry..."
-    & "$vboxManagePath" storageattach "$VMName" --storagectl "SATA" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
-    Log-Message "VDI added to VirtualBox media registry."
-
     # Create the VM
     Log-Message "Creating VM..."
     & "$vboxManagePath" createvm --name $VMName --ostype $OSType --register
@@ -171,6 +163,14 @@ try {
     & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1 --bootable on
     Log-Message "Storage controller added successfully."
 
+    # Assign a new UUID to the VDI file
+    $vdiUUID = Set-VDIUUID -vboxManagePath $vboxManagePath -vdiFilePath $vdiFilePath
+
+    # Add the VDI to the VirtualBox media registry
+    Log-Message "Adding VDI to VirtualBox media registry..."
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
+    Log-Message "VDI added to VirtualBox media registry."
+
     # Attach the VDI from the correct path
     $vdiPath = $vdiFilePath
     Log-Message "Attaching VDI from $vdiPath..."
@@ -183,7 +183,7 @@ try {
     Log-Message "VM started successfully."
 }
 catch {
-    Log-Message "An error occurred: $_.Exception.Message"
+    Log-Message "An error occurred: $($_.Exception.Message)"
     throw
 }
 
