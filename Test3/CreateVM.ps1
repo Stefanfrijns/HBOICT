@@ -92,10 +92,10 @@ if (-not (Test-Path $sevenZipPath)) {
 }
 
 # Download and extract the VHD
-[string]$downloadsPath = "$env:Public\Downloads"
-[string]$tempExtractedPath = "$downloadsPath\temp"
-[string]$vhdLocalPath = "$env:Public\$VMName.7z"
-[string]$vhdExtractedPath = "C:\Users\Public\LinuxVMs\$VMName"
+$downloadsPath = "$env:Public\Downloads"
+$tempExtractedPath = "$downloadsPath\temp"
+$vhdLocalPath = "$env:Public\$VMName.7z"
+$vhdExtractedPath = "C:\Users\Public\LinuxVMs\$VMName"
 
 try {
     # Ensure the downloads directory exists
@@ -122,20 +122,11 @@ try {
     }
     Log-Message "VDI file path: $vdiFilePath"
 
-   if (Test-Path "$tempExtractedPath\$VMName.vdi") {
-     $i = 1
-     while (Test-Path "$tempExtractedPath\$VMName($i).vdi") {
-       $i++
-     }
-     $renamedVDIPath = "$tempExtractedPath\$VMName($i).vdi"
-     Rename-Item $vdiFilePath -NewName $renamedVDIPath
-     Log-Message "VDI file renamed to $renamedVDIPath (duplicate detected)"
-   } else {
-     $renamedVDIPath = "$tempExtractedPath\$VMName.vdi"
-     Rename-Item $vdiFilePath -NewName $VMName.vdi
-     Log-Message "VDI file renamed to $renamedVDIPath"
-   }
-
+    # Rename the extracted VDI file to VMName.vdi
+    $renamedVDIPath = "$tempExtractedPath\$VMName.vdi"
+    Log-Message "Renaming VDI file from $vdiFilePath to $renamedVDIPath"
+    Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
+    Log-Message "VDI file renamed to $renamedVDIPath"
 
     # Clone the VDI file to the target directory
     $clonedVDIPath = "$vhdExtractedPath\$VMName.vdi"
