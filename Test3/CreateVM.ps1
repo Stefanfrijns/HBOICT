@@ -121,8 +121,18 @@ try {
     }
     Log-Message "VDI file path: $vdiFilePath"
 
+    # Ensure the VDI file path is correct
+    if (Test-Path $vdiFilePath) {
+        Log-Message "VDI file confirmed at path: $vdiFilePath"
+    } else {
+        Log-Message "VDI file not found at path: $vdiFilePath"
+        throw "VDI file not found at path: $vdiFilePath"
+    }
+
     # Assign a new UUID to the VDI file
-    & VBoxManage internalcommands sethduuid "$vdiFilePath"
+    $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`""
+    Log-Message "Running UUID command: $uuidCommand"
+    Invoke-Expression $uuidCommand
     Log-Message "New UUID assigned to $vdiFilePath"
 
     # Wait to ensure the file system is updated
