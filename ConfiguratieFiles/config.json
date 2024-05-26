@@ -1,0 +1,43 @@
+{
+    "environments": [
+        {
+            "name": "Development Environment",
+            "vms": [
+                {
+                    "type": "Ubuntu",
+                    "count": 3,
+                    "config": {
+                        "vhd_url": "https://dlconusc1.linuxvmimages.com/046389e06777452db2ccf9a32efa3760:virtualbox/U/24.04/UbuntuServer_24.04_VB.7z",
+                        "os_type": "Ubuntu_64",
+                        "memory_size": 2048,
+                        "cpus": 2,
+                        "applications": [
+                            "cURL",
+                            "Wget2",
+                            "Nano",
+                            "Powershell",
+                            "7-ZIP"
+                        ]
+                    }
+                },
+                {
+                    "type": "Alpine",
+                    "count": 1,
+                    "config": {
+                        "vhd_url": "https://example.com/alpine.vhd",
+                        "os_type": "Linux_64",
+                        "memory_size": 1024,
+                        "cpus": 1,
+                        "applications": [
+                            "cURL",
+                            "Wget2",
+                            "Nano",
+                            "Powershell",
+                            "7-ZIP"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
