@@ -47,13 +47,7 @@ function Extract-7z {
         [string]$outputFolder
     )
     if (Test-Path $outputFolder) {
-        $vdiFile = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1
-        if ($vdiFile) {
-            Log-Message "VDI file already exists in $outputFolder. Skipping extraction."
-            return $vdiFile.FullName
-        } else {
-            Remove-Item -Recurse -Force $outputFolder
-        }
+        Remove-Item -Recurse -Force $outputFolder
     }
     New-Item -ItemType Directory -Force -Path $outputFolder
 
