@@ -150,12 +150,13 @@ try {
     Log-Message "VDI attached successfully."
 
     # Verify attachment
+    $escapedVdiPath = [regex]::Escape($vdiPath)
     $verifyCommand = "& `"$vboxManagePath`" showvminfo `"$VMName`" --machinereadable"
     $vmInfo = Invoke-Expression $verifyCommand
     Log-Message "VM Info: $vmInfo"
 
     # Check if the VDI is attached correctly
-    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$vdiPath") {
+    if ($vmInfo -notmatch "SATA_Controller-0-0.*medium=$escapedVdiPath") {
         Log-Message "Failed to attach VDI file to the VM."
         throw "Failed to attach VDI file to the VM."
     }
