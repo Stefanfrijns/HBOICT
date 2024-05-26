@@ -145,7 +145,9 @@ try {
     Log-Message "Storage controller added successfully."
 
     # Assign a new UUID to the VDI file
-    & VBoxManage internalcommands sethduuid "$vdiFilePath" "002760e8-56a8-412d-a93e-7126217dc34c"
+    $newUUID = [guid]::NewGuid().ToString()
+    Log-Message "Assigning new UUID to VDI file..."
+    & "$vboxManagePath" internalcommands sethduuid "$vdiFilePath" "$newUUID"
     Log-Message "New UUID assigned to $vdiFilePath"
 
     # Attach the VDI to the VM
