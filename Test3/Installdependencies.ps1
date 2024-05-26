@@ -78,6 +78,17 @@ function Extract-7z {
     return $vdiFilePath
 }
 
+# Function to change VDI UUID
+function Change-VDIUUID {
+    param (
+        [string]$vboxManagePath,
+        [string]$vdiPath
+    )
+    $changeUUIDCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiPath`""
+    Log-Message "Running change UUID command: $changeUUIDCommand"
+    Invoke-Expression $changeUUIDCommand
+}
+
 # Log the start of the script
 Log-Message "Script execution started. Parameters: VMName=$VMName, VHDUrl=$VHDUrl, OSType=$OSType, MemorySize=$MemorySize, CPUs=$CPUs"
 
@@ -123,6 +134,9 @@ try {
     $newVdiPath = Join-Path -Path $vhdExtractedPath -ChildPath "$VMName.vdi"
     Move-Item -Path $vdiFilePath.FullName -Destination $newVdiPath
     Log-Message "VDI file renamed to $newVdiPath"
+
+    # Change the UUID of the VDI file
+    Change-VDIUUID -vboxManagePath $vboxManagePath -vdiPath $newVdiPath
 
     # Wait to ensure the file system is updated
     Start-Sleep -Seconds 5
