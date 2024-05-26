@@ -91,7 +91,7 @@ function Set-VDIUUID {
         $uuidCommand = "& `"$vboxManagePath`" internalcommands sethduuid `"$vdiFilePath`" `"$newUUID`""
         Log-Message "Running UUID command: $uuidCommand"
         Invoke-Expression $uuidCommand
-        Log-Message "New UUID assigned to $vdiFilePath: $newUUID"
+        Log-Message "New UUID assigned to ${vdiFilePath}: $newUUID"
         return $newUUID
     } catch {
         Log-Message "Failed to assign new UUID to $vdiFilePath"
@@ -149,8 +149,9 @@ try {
     }
 
     # Create the VM
-    Log-Message "Creating VM..."
-    & "$vboxManagePath" createvm --name $VMName --ostype $OSType --register
+    $vmUUID = [guid]::NewGuid().ToString()
+    Log-Message "Creating VM with UUID $vmUUID..."
+    & "$vboxManagePath" createvm --name $VMName --ostype $OSType --uuid $vmUUID --register
     Log-Message "VM created successfully."
 
     # Modify VM settings
@@ -168,9 +169,7 @@ try {
 
     # Attach the VDI to the VM
     Log-Message "Attaching VDI to VM..."
-    $attachCommand = "& `"$vboxManagePath`" storageattach `"$VMName`" --storagectl `"$SATA_Controller`" --port 0 --device 0 --type hdd --medium `"$vdiFilePath`""
-    Log-Message "Running attach command: $attachCommand"
-    Invoke-Expression $attachCommand
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$vdiFilePath"
     Log-Message "VDI attached successfully."
 
     # Start the VM
