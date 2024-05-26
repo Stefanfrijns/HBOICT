@@ -121,11 +121,11 @@ try {
     }
 
     # Construct the full VDI path
-    $vdiFilePath = "$vhdExtractedPath\$vdiFilename"
+    $vdiFilePath = Join-Path -Path $vhdExtractedPath -ChildPath $vdiFilename
     Log-Message "VDI file path: $vdiFilePath"
 
     # Assign a new UUID to the VDI file
-    & VBoxManage internalcommands sethduuid $vdiFilePath
+    & "$vboxManagePath" internalcommands sethduuid "$vdiFilePath"
     Log-Message "New UUID assigned to $vdiFilePath"
 
     # Wait to ensure the file system is updated
