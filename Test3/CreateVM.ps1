@@ -84,6 +84,11 @@ function Remove-IllegalCharacters {
     return $sanitized
 }
 
+# Generate a new UUID
+function New-UUID {
+    [Guid]::NewGuid().ToString()
+}
+
 # Sanitize VMName
 $VMName = Remove-IllegalCharacters -name $VMName
 Log-Message "Sanitized VMName: $VMName"
@@ -152,6 +157,12 @@ try {
     if (-not (Test-Path $vhdExtractedPath)) {
         New-Item -ItemType Directory -Force -Path $vhdExtractedPath
     }
+
+    # Change the UUID of the VDI file
+    Log-Message "Assigning new UUID to VDI file..."
+    $newUUID = New-UUID
+    & "$vboxManagePath" internalcommands sethduuid "$renamedVDIPath" $newUUID
+    Log-Message "New UUID assigned to $renamedVDIPath: $newUUID"
 
     # Clone the VDI file to the target directory
     $clonedVDIPath = "$vhdExtractedPath\$VMName.vdi"
