@@ -1,5 +1,5 @@
 ﻿param (
-    [string]$GithubRepoUrl = "https://raw.githubusercontent.com/Stefanfrijns/HBOICT/main/Testing/CreateVM.ps1"
+    [string]$GithubRepoUrl = "https://raw.githubusercontent.com/Stefanfrijns/HBOICT/main/Virtualbox/CreateVM.ps1"
 )
 
 # Functie om een bestand te downloaden
