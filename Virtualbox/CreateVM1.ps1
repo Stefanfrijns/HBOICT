@@ -1,3 +1,18 @@
+param (
+    [string]$VMName,
+    [string]$VHDUrl,
+    [string]$OSType,
+    [int]$MemorySize,
+    [int]$CPUs,
+    [string]$NetworkType,
+    [string]$ConfigureNetworkPath
+)
+
+# Validate input parameters
+if (-not $VMName -or -not $VHDUrl -or -not $OSType -or -not $MemorySize -or -not $CPUs -or -not $NetworkType -or -not $ConfigureNetworkPath) {
+    throw "All parameters must be provided: VMName, VHDUrl, OSType, MemorySize, CPUs, NetworkType, ConfigureNetworkPath"
+}
+
 # Set up the log file
 $logFilePath = "$env:Public\CreateVM.log"
 function Log-Message {
