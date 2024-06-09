@@ -1,6 +1,3 @@
-param (
-    [string]$GithubRepoUrl = "https://raw.githubusercontent.com/Stefanfrijns/HBOICT/main/Virtualbox/CreateVM.ps1"
-)
 
 # Functie om een bestand te downloaden
 function Download-File {
@@ -23,9 +20,6 @@ if (-not (Test-Administrator)) {
     Start-Process powershell.exe "-File $PSCommandPath" -Verb RunAs
     exit
 }
-
-# Tijdelijk wijzig de Execution Policy
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 
 # Functie om te controleren of Visual C++ 2019 Redistributable is geïnstalleerd
 function Is-VCRuntimeInstalled {
@@ -150,31 +144,10 @@ function Install-7Zip {
     Write-Output "7-Zip installed successfully."
 }
 
-# Functie om PowerShell 7 te installeren
-function Install-PowerShell7 {
-    $pwshPath = "C:\Program Files\PowerShell\7\pwsh.exe"
-    
-    if (Test-Path $pwshPath) {
-        Write-Output "PowerShell 7 is already installed. Skipping installation."
-        return
-    }
-
-    $pwshInstallerUrl = "https://github.com/PowerShell/PowerShell/releases/download/v7.3.4/PowerShell-7.3.4-win-x64.msi"
-    $pwshInstallerPath = "$env:Public\PowerShell-7.3.4-win-x64.msi"
-
-    Write-Output "Downloading PowerShell 7 installer..."
-    Download-File -url $pwshInstallerUrl -output $pwshInstallerPath
-    Write-Output "PowerShell 7 installer downloaded. Starting installation..."
-    Start-Process msiexec.exe -ArgumentList "/i $pwshInstallerPath /quiet /norestart" -Wait
-    Remove-Item $pwshInstallerPath
-    Write-Output "PowerShell 7 installed successfully."
-}
 
 # Installeer de vereiste software
 Install-VCRuntime
 Install-VirtualBox
 Install-7Zip
-Install-PowerShell7
 
-# Herstel de oorspronkelijke Execution Policy
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
+
