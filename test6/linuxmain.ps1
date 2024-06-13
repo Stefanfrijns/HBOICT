@@ -115,7 +115,7 @@ if ($vmExists) {
         "-CPUs", $CPUs,
         "-NetworkTypes", $NetworkTypes,
         "-Applications", $Applications,
-        "-ConfigureNetworkPath", $configureNetworkPath
+        "-ConfigureNetworkPath", $configureNetworkLocalPath
     )
     & pwsh -File $modifyVMSettingsLocalPath @arguments
 } else {
@@ -129,7 +129,7 @@ if ($vmExists) {
         "-CPUs", $CPUs,
         "-NetworkTypes", $NetworkTypes,
         "-Applications", $Applications,
-        "-ConfigureNetworkPath", $configureNetworkPath
+        "-ConfigureNetworkPath", $configureNetworkLocalPath
     )
     & pwsh -File $createVM1LocalPath @arguments
 
