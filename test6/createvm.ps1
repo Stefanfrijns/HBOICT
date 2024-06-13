@@ -74,12 +74,12 @@ function Extract-7z {
     $process.WaitForExit()
     $output | Add-Content -Path $logFilePath
 
-    $vdiFile = Get-ChildItem -Path $outputFolder -Filter *.vdi -Recurse | Select-Object -First 1
-    if (-not $vdiFile) {
-        throw "VDI file not found after extraction. Check $logFilePath for details."
+    $vmdkFile = Get-ChildItem -Path $outputFolder -Filter *.vmdk -Recurse | Select-Object -First 1
+    if (-not $vmdkFile) {
+        throw "VMDK file not found after extraction. Check $logFilePath for details."
     }
-    Log-Message "VDI file extracted to $($vdiFile.FullName)"
-    return $vdiFile.FullName
+    Log-Message "VMDK file extracted to $($vmdkFile.FullName)"
+    return $vmdkFile.FullName
 }
 
 # Ensure the downloads directory exists
@@ -104,42 +104,42 @@ try {
     }
 
     Log-Message "Extracting VHD to $tempExtractedPath..."
-    $vdiFilePath = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $tempExtractedPath
+    $vmdkFilePath = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $tempExtractedPath
     Log-Message "Extraction process completed."
 
-    if (-not $vdiFilePath) {
-        Log-Message "Extracted VDI file not found in $tempExtractedPath"
-        throw "Extraction failed or VDI file not found."
+    if (-not $vmdkFilePath) {
+        Log-Message "Extracted VMDK file not found in $tempExtractedPath"
+        throw "Extraction failed or VMDK file not found."
     }
-    Log-Message "VDI file path: $vdiFilePath"
+    Log-Message "VMDK file path: $vmdkFilePath"
 
-    # Ensure $vdiFilePath is a string and correct
-    $vdiFilePath = $vdiFilePath -join ""
-    $vdiFilePath = $vdiFilePath.Trim()
-    $vdiFilePath = $vdiFilePath -replace ".*(C:\\Users\\Public\\Downloads\\.*?\\.*?\.vdi).*", '$1'
-    Log-Message "Validated VDI file path: $vdiFilePath"
+    # Ensure $vmdkFilePath is a string and correct
+    $vmdkFilePath = $vmdkFilePath -join ""
+    $vmdkFilePath = $vmdkFilePath.Trim()
+    $vmdkFilePath = $vmdkFilePath -replace ".*(C:\\Users\\Public\\Downloads\\.*?\\.*?\.vmdk).*", '$1'
+    Log-Message "Validated VMDK file path: $vmdkFilePath"
 
-    # Rename the extracted VDI file to VMName.vdi
-    $renamedVDIPath = "$tempExtractedPath\$VMName.vdi"
-    Log-Message "Renaming VDI file from $vdiFilePath to $renamedVDIPath"
-    Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
-    Log-Message "VDI file renamed to $renamedVDIPath"
+    # Rename the extracted VMDK file to VMName.vmdk
+    $renamedVMDKPath = "$tempExtractedPath\$VMName.vmdk"
+    Log-Message "Renaming VMDK file from $vmdkFilePath to $renamedVMDKPath"
+    Rename-Item -Path $vmdkFilePath -NewName "$VMName.vmdk"
+    Log-Message "VMDK file renamed to $renamedVMDKPath"
 
-    # Assign a new UUID to the renamed VDI file
-    Log-Message "Assigning new UUID to VDI file..."
-    & "$vboxManagePath" internalcommands sethduuid "$renamedVDIPath"
-    Log-Message "New UUID assigned to $renamedVDIPath"
+    # Assign a new UUID to the renamed VMDK file
+    Log-Message "Assigning new UUID to VMDK file..."
+    & "$vboxManagePath" internalcommands sethduuid "$renamedVMDKPath"
+    Log-Message "New UUID assigned to $renamedVMDKPath"
 
     # Ensure the target directory exists
     if (-not (Test-Path $vhdExtractedPath)) {
         New-Item -ItemType Directory -Force -Path $vhdExtractedPath
     }
 
-    # Clone the VDI file to the target directory
-    $clonedVDIPath = "$vhdExtractedPath\$VMName.vdi"
-    Log-Message "Cloning VDI to $clonedVDIPath..."
-    & "$vboxManagePath" clonevdi "$renamedVDIPath" "$clonedVDIPath"
-    Log-Message "VDI cloned successfully to $clonedVDIPath"
+    # Clone the VMDK file to the target directory
+    $clonedVMDKPath = "$vhdExtractedPath\$VMName.vmdk"
+    Log-Message "Cloning VMDK to $clonedVMDKPath..."
+    & "$vboxManagePath" clonevdi "$renamedVMDKPath" "$clonedVMDKPath"
+    Log-Message "VMDK cloned successfully to $clonedVMDKPath"
 
     # Create the VM
     Log-Message "Creating VM..."
@@ -156,10 +156,10 @@ try {
     & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1 --bootable on
     Log-Message "Storage controller added successfully."
 
-    # Attach the cloned VDI to the VM
-    Log-Message "Attaching cloned VDI to VM..."
-    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$clonedVDIPath"
-    Log-Message "Cloned VDI attached successfully."
+    # Attach the cloned VMDK to the VM
+    Log-Message "Attaching cloned VMDK to VM..."
+    & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$clonedVMDKPath"
+    Log-Message "Cloned VMDK attached successfully."
 
     # Configure network settings
     $arguments = @(
