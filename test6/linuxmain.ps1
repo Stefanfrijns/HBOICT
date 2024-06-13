@@ -15,7 +15,7 @@ param (
 $previousExecutionPolicy = Get-ExecutionPolicy
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 
-[string]$ConfigureNetworkUrl = "https://raw.githubusercontent.com/Matthias-Schulski/saxion-flex-infra/main/infra/linux/virtualbox/ConfigureNetwork.ps1"
+[string]$ConfigureNetworkUrl = "https://raw.githubusercontent.com/Stefanfrijns/HBOICT/main/test6/configurenetwerk.ps1"
 [string]$CreateVM1Url = "https://raw.githubusercontent.com/Stefanfrijns/HBOICT/main/Virtualbox/CreateVM1.ps1"
 [string]$ModifyVMSettingsUrl = "https://raw.githubusercontent.com/Stefanfrijns/HBOICT/main/Virtualbox/ModifyVMSettings.ps1"
 
