@@ -159,7 +159,8 @@ try {
     Log-Message "Cloned VMDK attached successfully."
 
     # Download en voer het netwerkconfiguratiescript uit
-    Download-File -url $ConfigureNetworkPath -output "$env:Public\Downloads\ConfigureNetwork.ps1"
+    $configureNetworkScript = "$env:Public\Downloads\ConfigureNetwork.ps1"
+    Download-File -url $ConfigureNetworkPath -output $configureNetworkScript
 
     # Lees de netwerktypes
     $networkTypes = $NetworkTypes | ConvertFrom-Json
@@ -172,9 +173,9 @@ try {
             "-AdapterName", $networkType.AdapterName,
             "-SubnetNetwork", $networkType.Network
         )
-        & pwsh -File "$env:Public\Downloads\ConfigureNetwork.ps1" @args
+        & pwsh -Command (Get-Content -Raw -Path $configureNetworkScript) @args
     }
-    
+
     Log-Message "Starting VM..."
     & "$vboxManagePath" startvm $VMName --type headless
     Log-Message "VM started successfully."
