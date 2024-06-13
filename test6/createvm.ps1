@@ -158,9 +158,12 @@ try {
     & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$clonedVMDKPath"
     Log-Message "Cloned VMDK attached successfully."
 
-    # Download en voer het netwerkconfiguratiescript uit
-    $configureNetworkScript = "$env:Public\Downloads\ConfigureNetwork.ps1"
-    Download-File -url $ConfigureNetworkPath -output $configureNetworkScript
+    # Download het netwerkconfiguratiescript
+    $configureNetworkScriptPath = "$env:Public\Downloads\ConfigureNetwork.ps1"
+    Download-File -url $ConfigureNetworkPath -output $configureNetworkScriptPath
+
+    # Lees de inhoud van het netwerkconfiguratiescript
+    $configureNetworkScriptContent = Get-Content -Path $configureNetworkScriptPath -Raw
 
     # Lees de netwerktypes
     $networkTypes = $NetworkTypes | ConvertFrom-Json
@@ -173,7 +176,7 @@ try {
             "-AdapterName", $networkType.AdapterName,
             "-SubnetNetwork", $networkType.Network
         )
-        & pwsh -Command (Get-Content -Raw -Path $configureNetworkScript) @args
+        Invoke-Command -ScriptBlock ([ScriptBlock]::Create($configureNetworkScriptContent)) -ArgumentList $args
     }
 
     Log-Message "Starting VM..."
