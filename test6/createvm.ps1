@@ -190,14 +190,10 @@ try {
             throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork"
         }
 
-        $args = @(
-            "-VMName", $VMName,
-            "-NetworkType", $networkType.Type,
-            "-AdapterName", $networkType.AdapterName,
-            "-SubnetNetwork", $networkType.Network,
-            "-NicIndex", $nicIndex
-        )
-        Invoke-Command -ScriptBlock ([ScriptBlock]::Create($configureNetworkScriptContent)) -ArgumentList $args
+        $argsString = "-VMName $VMName -NetworkType $($networkType.Type) -AdapterName $($networkType.AdapterName) -SubnetNetwork $($networkType.Network) -NicIndex $nicIndex"
+        Log-Message "Running network configuration with args: $argsString"
+        
+        Invoke-Command -ScriptBlock ([ScriptBlock]::Create($configureNetworkScriptContent)) -ArgumentList $argsString
 
         $nicIndex++
     }
