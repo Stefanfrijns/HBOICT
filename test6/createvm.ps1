@@ -172,11 +172,12 @@ try {
     # Configureer de netwerken
     $nicIndex = 1
     foreach ($networkType in $networkTypes) {
+        Log-Message "Configuring network: Type=$($networkType.Type), AdapterName=$($networkType.AdapterName), Network=$($networkType.Network)"
         if (-not $networkType.Type -or -not $networkType.AdapterName -or -not $networkType.Network) {
             Log-Message "Missing parameters for network configuration: Type=$($networkType.Type), AdapterName=$($networkType.AdapterName), Network=$($networkType.Network)"
             throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork"
         }
-    
+
         $args = @(
             "-VMName", $VMName,
             "-NetworkType", $networkType.Type,
