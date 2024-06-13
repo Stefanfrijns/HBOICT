@@ -163,9 +163,7 @@ try {
 
     # Configure network
     Log-Message "Configuring network..."
-    $networkTypes = $NetworkTypes | ConvertFrom-Json
-    for ($i = 0; $i -lt $networkTypes.Count; $i++) {
-        $networkType = $networkTypes[$i]
+    foreach ($networkType in $NetworkTypes) {
         & pwsh -File $ConfigureNetworkPath -VMName $VMName -NetworkType $networkType.Type -AdapterName $networkType.AdapterName -SubnetNetwork $networkType.Network
     }
     
