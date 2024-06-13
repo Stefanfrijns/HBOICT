@@ -1,0 +1,169 @@
+param (
+    [string]$VMName,
+    [string]$VHDUrl,
+    [string]$OSType,
+    [int]$MemorySize,
+    [int]$CPUs,
+    [string]$NetworkType,
+    [string]$AdapterName,
+    [string]$SubnetNetwork,
+    [string]$IPAddress,
+    [string]$Applications
+)
+
+# Tijdelijk wijzigen van de Execution Policy om het uitvoeren van scripts toe te staan
+$previousExecutionPolicy = Get-ExecutionPolicy
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+
+# Path to VBoxManage
+$vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
+
+# Functie om een bestand te downloaden
+function Download-File {
+    param (
+        [string]$url,
+        [string]$output
+    )
+    try {
+        $client = New-Object System.Net.WebClient
+        $client.DownloadFile($url, $output)
+        Write-Output "Downloaded file from $url to $output"
+    } catch {
+        Write-Output "Failed to download file from $url to $output"
+        throw
+    }
+}
+
+# Function to create and configure the VM
+function Create-VM {
+    param (
+        [string]$VMName,
+        [string]$VHDUrl,
+        [string]$OSType,
+        [int]$MemorySize,
+        [int]$CPUs,
+        [string]$NetworkType,
+        [string]$AdapterName,
+        [string]$SubnetNetwork,
+        [string]$IPAddress,
+        [string]$Applications
+    )
+
+    # Log the start of the script
+    Log-Message "Script execution started. Parameters: VMName=$VMName, VHDUrl=$VHDUrl, OSType=$OSType, MemorySize=$MemorySize, CPUs=$CPUs, NetworkType=$NetworkType, AdapterName=$AdapterName, SubnetNetwork=$SubnetNetwork, IPAddress=$IPAddress, Applications=$Applications"
+
+    # Check if VBoxManage is available
+    if (-not (Test-Path $vboxManagePath)) {
+        Log-Message "VBoxManage not found. Ensure VirtualBox is installed."
+        throw "VBoxManage not found."
+    }
+
+    # Download and extract the VHD
+    $downloadsPath = "$env:Public\Downloads"
+    $tempExtractedPath = "$downloadsPath\$VMName"
+    $vhdLocalPath = "$env:Public\$VMName.7z"
+    $vhdExtractedPath = "C:\Users\Public\LinuxVMs\$VMName"
+
+    try {
+        # Ensure the downloads directory exists
+        if (-not (Test-Path $downloadsPath)) {
+            New-Item -ItemType Directory -Force -Path $downloadsPath
+        }
+
+        # Check if the file already exists
+        if (Test-Path $vhdLocalPath) {
+            Log-Message "VHD archive file already exists at $vhdLocalPath. Skipping download."
+        } else {
+            Log-Message "Downloading VHD from $VHDUrl..."
+            Download-File $VHDUrl $vhdLocalPath
+            Log-Message "Download completed. File size: $((Get-Item $vhdLocalPath).Length) bytes"
+        }
+
+        Log-Message "Extracting VHD to $tempExtractedPath..."
+        $vdiFilePath = Extract-7z -sevenZipPath $sevenZipPath -inputFile $vhdLocalPath -outputFolder $tempExtractedPath
+        Log-Message "Extraction process completed."
+
+        if (-not $vdiFilePath) {
+            Log-Message "Extracted VDI file not found in $tempExtractedPath"
+            throw "Extraction failed or VDI file not found."
+        }
+        Log-Message "VDI file path: $vdiFilePath"
+
+        # Ensure $vdiFilePath is a string and correct
+        $vdiFilePath = $vdiFilePath -join ""
+        $vdiFilePath = $vdiFilePath.Trim()
+        $vdiFilePath = $vdiFilePath -replace ".*(C:\\Users\\Public\\Downloads\\.*?\\.*?\.vdi).*", '$1'
+        Log-Message "Validated VDI file path: $vdiFilePath"
+
+        # Rename the extracted VDI file to VMName.vdi
+        $renamedVDIPath = "$tempExtractedPath\$VMName.vdi"
+        Log-Message "Renaming VDI file from $vdiFilePath to $renamedVDIPath"
+        Rename-Item -Path $vdiFilePath -NewName "$VMName.vdi"
+        Log-Message "VDI file renamed to $renamedVDIPath"
+
+        # Assign a new UUID to the renamed VDI file
+        Log-Message "Assigning new UUID to VDI file..."
+        & "$vboxManagePath" internalcommands sethduuid "$renamedVDIPath"
+        Log-Message "New UUID assigned to $renamedVDIPath"
+
+        # Ensure the target directory exists
+        if (-not (Test-Path $vhdExtractedPath)) {
+            New-Item -ItemType Directory -Force -Path $vhdExtractedPath
+        }
+
+        # Clone the VDI file to the target directory
+        $clonedVDIPath = "$vhdExtractedPath\$VMName.vdi"
+        Log-Message "Cloning VDI to $clonedVDIPath..."
+        & "$vboxManagePath" clonevdi "$renamedVDIPath" "$clonedVDIPath"
+        Log-Message "VDI cloned successfully to $clonedVDIPath"
+
+        # Create the VM
+        Log-Message "Creating VM..."
+        & "$vboxManagePath" createvm --name $VMName --ostype $OSType --register
+        Log-Message "VM created successfully."
+
+        # Modify VM settings
+        Log-Message "Modifying VM settings..."
+        & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --nic1 nat --vram 16 --graphicscontroller vmsvga
+        Log-Message "VM settings modified successfully."
+
+        # Add storage controller with 1 port
+        Log-Message "Adding storage controller..."
+        & "$vboxManagePath" storagectl $VMName --name "SATA_Controller" --add sata --controller IntelAhci --portcount 1 --bootable on
+        Log-Message "Storage controller added successfully."
+
+        # Attach the cloned VDI to the VM
+        Log-Message "Attaching cloned VDI to VM..."
+        & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$clonedVDIPath"
+        Log-Message "Cloned VDI attached successfully."
+
+        # Configure network settings
+        if ($NetworkType -eq "natnetwork" -or $NetworkType -eq "host-only") {
+            Log-Message "Configuring $NetworkType network for VM..."
+            & "$vboxManagePath" modifyvm $VMName --nic1 $NetworkType --$NetworkType $AdapterName --cableconnected1 on
+            Log-Message "$NetworkType network configured successfully."
+        } elseif ($NetworkType -eq "bridged") {
+            Log-Message "Configuring bridged network for VM..."
+            & "$vboxManagePath" modifyvm $VMName --nic1 bridged --bridgeadapter1 $AdapterName --cableconnected1 on
+            Log-Message "Bridged network configured successfully."
+        }
+
+        Log-Message "Applying IP address configuration..."
+        & "$vboxManagePath" guestcontrol $VMName run --exe "/bin/sh" --username "username" --password "password" -- "sh" "-c" "ifconfig eth0 $IPAddress netmask $SubnetNetwork up"
+        Log-Message "IP address configuration applied."
+
+        Log-Message "Starting VM..."
+        & "$vboxManagePath" startvm $VMName --type headless
+        Log-Message "VM started successfully."
+    }
+    catch {
+        Log-Message "An error occurred: $($_.Exception.Message)"
+        throw
+    }
+    Log-Message "Script execution completed successfully."
+}
+
+Create-VM -VMName $VMName -VHDUrl $VHDUrl -OSType $OSType -MemorySize $MemorySize -CPUs $CPUs -NetworkType $NetworkType -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork -IPAddress $IPAddress -Applications $Applications
+
+# Herstel de oorspronkelijke Execution Policy
+Set-ExecutionPolicy -ExecutionPolicy $previousExecutionPolicy -Scope Process -Force
