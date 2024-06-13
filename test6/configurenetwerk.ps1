@@ -1,21 +1,17 @@
 param (
     [string]$VMName,
-    [string]$NetworkType,
-    [string]$AdapterName,
-    [string]$SubnetNetwork,
-    [string]$IPAddress
+    [string]$NetworkTypes,
+    [string]$IPAddresses
 )
 
-# Validate input parameters
-if (-not $VMName -or -not $NetworkType -or -not $AdapterName -or -not $SubnetNetwork -or -not $IPAddress) {
-    throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork, IPAddress"
-}
+# Parse NetworkTypes and IPAddresses
+$networkTypes = $NetworkTypes | ConvertFrom-Json
+$ipAddresses = $IPAddresses | ConvertFrom-Json
 
 # Path to VBoxManage
 $vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
 
-##########Functions###########
-
+# Log functie
 $logFilePath = "$env:Public\ConfigureNetwork.log"
 function Log-Message {
     param (
@@ -72,40 +68,41 @@ function Configure-Network {
                 $adapter = $adapters | Where-Object { $_ -eq $AdapterName }
                 if (-not $adapter) {
                     $adapter = Create-HostOnlyAdapter
-                    Log-Message "Created host-only adapter $adapter"
                 }
             }
             & "$vboxManagePath" modifyvm $VMName --nic1 hostonly --hostonlyadapter1 $adapter
             Log-Message "Configured host-only network for $VMName using adapter $adapter"
-            & "$vboxManagePath" hostonlyif ipconfig $adapter --ip $IPAddress --netmask $SubnetNetwork
-            Log-Message "Configured IP address $IPAddress and subnet $SubnetNetwork for adapter $adapter"
         }
         "nat" {
-            & "$vboxManagePath" modifyvm $VMName --nic1 nat --natnet1 "$SubnetNetwork"
-            Log-Message "Configured NAT network for $VMName with subnet $SubnetNetwork"
+            & "$vboxManagePath" modifyvm $VMName --nic1 nat
+            Log-Message "Configured NAT network for $VMName"
         }
         "bridged" {
             $adapter = Get-BridgedNetworkAdapters
             & "$vboxManagePath" modifyvm $VMName --nic1 bridged --bridgeadapter1 $adapter
             Log-Message "Configured bridged network for $VMName using adapter $adapter"
         }
+        "natnetwork" {
+            & "$vboxManagePath" modifyvm $VMName --nic1 natnetwork --nat-network1 $AdapterName
+            Log-Message "Configured NAT Network for $VMName using adapter $AdapterName"
+        }
         default {
             throw "Unsupported network type: $NetworkType"
         }
     }
+
+    # Configure the IP address for the VM
+    & "$vboxManagePath" guestcontrol $VMName run --exe "/sbin/ip" --username "root" --password "password" --wait-stdout -- -4 addr add $IPAddress/$SubnetNetwork dev eth0
+    Log-Message "Configured IP address $IPAddress/$SubnetNetwork for $VMName"
 }
 
-##########EXECUTE###########
+# Configure networks for VM
+for ($i = 0; $i -lt $networkTypes.Count; $i++) {
+    $networkType = $networkTypes[$i]
+    $ipAddress = $ipAddresses[$i]
+    $subnet = $config.EnvironmentVariables.Subnets | Where-Object { $_.Name -eq $networkType }
 
-# Call the function to configure the network
-try {
-    Log-Message "Starting network configuration for $VMName with network type $NetworkType"
-    Configure-Network -VMName $VMName -NetworkType $NetworkType -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork -IPAddress $IPAddress
-    Log-Message "Network configuration completed for $VMName"
-}
-catch {
-    Log-Message "An error occurred: $($_.Exception.Message)"
-    throw
+    Configure-Network -VMName $VMName -NetworkType $subnet.Type -AdapterName $subnet.AdapterName -SubnetNetwork $subnet.Network -IPAddress $ipAddress
 }
 
 Log-Message "Script execution completed successfully."
