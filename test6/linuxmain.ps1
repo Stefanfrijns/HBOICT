@@ -54,7 +54,7 @@ function Download-File {
 # Controleer of VBoxManage beschikbaar is
 $vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
 if (-not (Test-Path $vboxManagePath)) {
-    Log-Message "VBoxManage not found. Ensure VirtualBox is installed."
+    Write-Output "VBoxManage not found. Ensure VirtualBox is installed."
     throw "VBoxManage not found."
 }
 
@@ -78,33 +78,33 @@ if (-not (Test-Path $createdVMsPath)) {
 $createdVMs = Get-Content $createdVMsPath -Raw -ErrorAction SilentlyContinue | Out-String -ErrorAction SilentlyContinue
 $createdVMs = $createdVMs -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" } | Sort-Object -Unique
 
-Log-Message "List of created VMs:"
-$createdVMs | ForEach-Object { Log-Message " - $_" }
+Write-Output "List of created VMs:"
+$createdVMs | ForEach-Object { Write-Output " - $_" }
 
-Log-Message "Checking for VM: '$VMName'"
+Write-Output "Checking for VM: '$VMName'"
 
 # Check if the VM already exists
 $vmExists = $false
 foreach ($createdVM in $createdVMs) {
-    Log-Message "Comparing '$VMName' with '$createdVM'"
+    Write-Output "Comparing '$VMName' with '$createdVM'"
     if ($createdVM.Trim() -eq $VMName) {
-        Log-Message "Found existing VM: '$createdVM'"
+        Write-Output "Found existing VM: '$createdVM'"
         $vmExists = $true
         break
     }
 }
 
 if ($vmExists) {
-    Log-Message "VM $VMName already exists. Checking if it's running."
+    Write-Output "VM $VMName already exists. Checking if it's running."
     $vmState = & "$vboxManagePath" showvminfo "$VMName" --machinereadable | Select-String -Pattern "^VMState=" | ForEach-Object { $_.Line.Split("=")[1].Trim('"') }
     if ($vmState -eq "running") {
-        Log-Message "VM $VMName is already running. Prompting user for permission to shut down."
+        Write-Output "VM $VMName is already running. Prompting user for permission to shut down."
         $userInput = Read-Host "VM $VMName is currently running. Do you want to shut it down to apply changes? (yes/no)"
         if ($userInput -eq "yes") {
             & "$vboxManagePath" controlvm $VMName acpipowerbutton
             Start-Sleep -Seconds 10
         } else {
-            Log-Message "Skipping changes for VM $VMName."
+            Write-Output "Skipping changes for VM $VMName."
             exit
         }
     }
@@ -117,12 +117,11 @@ if ($vmExists) {
         "-AdapterName", $AdapterName,
         "-SubnetNetwork", $SubnetNetwork,
         "-IPAddress", $IPAddress,
-        "-ConfigureNetworkPath", $configureNetworkLocalPath,
         "-Applications", $Applications
     )
     & pwsh -File $modifyVMSettingsLocalPath @arguments
 } else {
-    Log-Message "Creating new VM: $VMName"
+    Write-Output "Creating new VM: $VMName"
     # Roep het CreateVM1.ps1 script aan met de juiste parameters
     $arguments = @(
         "-VMName", $VMName,
@@ -134,7 +133,6 @@ if ($vmExists) {
         "-AdapterName", $AdapterName,
         "-SubnetNetwork", $SubnetNetwork,
         "-IPAddress", $IPAddress,
-        "-ConfigureNetworkPath", $configureNetworkLocalPath,
         "-Applications", $Applications
     )
     & pwsh -File $createVM1LocalPath @arguments
@@ -146,4 +144,4 @@ if ($vmExists) {
 # Herstellen van de oorspronkelijke Execution Policy
 Set-ExecutionPolicy -ExecutionPolicy $previousExecutionPolicy -Scope Process -Force
 
-Log-Message "Script execution completed successfully."
+Write-Output "Script execution completed successfully."
