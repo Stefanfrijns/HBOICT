@@ -158,12 +158,11 @@ try {
     & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$clonedVMDKPath"
     Log-Message "Cloned VMDK attached successfully."
 
-    # Download het netwerkconfiguratiescript
-    $configureNetworkScriptPath = "$env:Public\Downloads\ConfigureNetwork.ps1"
-    Download-File -url $ConfigureNetworkPath -output $configureNetworkScriptPath
-
-    # Lees de inhoud van het netwerkconfiguratiescript
-    $configureNetworkScriptContent = Get-Content -Path $configureNetworkScriptPath -Raw
+    # Controleer of het netwerkconfiguratiescript bestaat en lees de inhoud
+    if (-not (Test-Path $ConfigureNetworkPath)) {
+        throw "Network configuration script not found at $ConfigureNetworkPath"
+    }
+    $configureNetworkScriptContent = Get-Content -Path $ConfigureNetworkPath -Raw
 
     # Lees de netwerktypes
     $networkTypes = $NetworkTypes | ConvertFrom-Json
