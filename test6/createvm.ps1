@@ -168,6 +168,7 @@ try {
     $networkTypes = $NetworkTypes | ConvertFrom-Json
 
     # Configureer de netwerken
+    $nicIndex = 1
     foreach ($networkType in $networkTypes) {
         if (-not $networkType.Type -or -not $networkType.AdapterName -or -not $networkType.Network) {
             Log-Message "Missing parameters for network configuration: Type=$($networkType.Type), AdapterName=$($networkType.AdapterName), Network=$($networkType.Network)"
@@ -178,9 +179,12 @@ try {
             "-VMName", $VMName,
             "-NetworkType", $networkType.Type,
             "-AdapterName", $networkType.AdapterName,
-            "-SubnetNetwork", $networkType.Network
+            "-SubnetNetwork", $networkType.Network,
+            "-NicIndex", $nicIndex
         )
         Invoke-Command -ScriptBlock ([ScriptBlock]::Create($configureNetworkScriptContent)) -ArgumentList $args
+
+        $nicIndex++
     }
 
     Log-Message "Starting VM..."
