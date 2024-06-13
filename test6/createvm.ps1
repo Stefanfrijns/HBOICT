@@ -166,12 +166,24 @@ try {
 
     # Lees de netwerktypes
     Log-Message "NetworkTypes parameter: $NetworkTypes"
-    $networkTypes = $NetworkTypes | ConvertFrom-Json
-    Log-Message "Parsed NetworkTypes: $($networkTypes | ConvertTo-Json -Compress)"
+
+    # Probeer de JSON te parseren
+    try {
+        $networkTypesArray = $NetworkTypes | ConvertFrom-Json
+        Log-Message "Parsed NetworkTypes: $($networkTypesArray | ConvertTo-Json -Compress)"
+    } catch {
+        Log-Message "Failed to parse NetworkTypes JSON: $_"
+        throw "Failed to parse NetworkTypes JSON."
+    }
+
+    # Controleer of het parsed JSON een array van objecten is
+    if ($null -eq $networkTypesArray -or $networkTypesArray.Count -eq 0) {
+        throw "Parsed NetworkTypes is null or empty."
+    }
 
     # Configureer de netwerken
     $nicIndex = 1
-    foreach ($networkType in $networkTypes) {
+    foreach ($networkType in $networkTypesArray) {
         Log-Message "Configuring network: Type=$($networkType.Type), AdapterName=$($networkType.AdapterName), Network=$($networkType.Network)"
         if (-not $networkType.Type -or -not $networkType.AdapterName -or -not $networkType.Network) {
             Log-Message "Missing parameters for network configuration: Type=$($networkType.Type), AdapterName=$($networkType.AdapterName), Network=$($networkType.Network)"
