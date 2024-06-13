@@ -185,3 +185,4 @@ Log-Message "Script execution completed successfully."
 
 # Herstel de oorspronkelijke Execution Policy
 Set-ExecutionPolicy -ExecutionPolicy $previousExecutionPolicy -Scope Process -Force
+echo test
