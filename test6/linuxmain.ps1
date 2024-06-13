@@ -115,7 +115,7 @@ if ($vmExists) {
         "-VMName", $VMName,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
-        "-NetworkTypes", $NetworkTypes,
+        "-NetworkTypes", ($NetworkTypes | ConvertTo-Json -Compress),
         "-Applications", $Applications,
         "-ConfigureNetworkPath", $ConfigureNetworkPath
     )
@@ -129,7 +129,7 @@ if ($vmExists) {
         "-OSType", $OSType,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
-        "-NetworkTypes", $NetworkTypes,
+        "-NetworkTypes", ($NetworkTypes | ConvertTo-Json -Compress),
         "-Applications", $Applications,
         "-ConfigureNetworkPath", $ConfigureNetworkPath
     )
