@@ -4,12 +4,9 @@ param (
     [string]$OSType,
     [int]$MemorySize,
     [int]$CPUs,
-    [string]$NetworkType,
-    [string]$AdapterName,
-    [string]$SubnetNetwork,
-    [string]$IPAddress,
-    [string]$ConfigureNetworkPath,
-    [string]$Applications
+    [string]$NetworkTypes, # Dit wordt een JSON-string die we moeten omzetten
+    [string]$Applications,
+    [string]$ConfigureNetworkPath
 )
 
 # Tijdelijk wijzigen van de Execution Policy om het uitvoeren van scripts toe te staan
