@@ -1,12 +1,10 @@
 param (
     [string]$VMName,
-    [string]$NetworkTypes,
-    [string]$IPAddresses
+    [string]$NetworkTypes
 )
 
-# Parse NetworkTypes and IPAddresses
+# Parse NetworkTypes
 $networkTypes = $NetworkTypes | ConvertFrom-Json
-$ipAddresses = $IPAddresses | ConvertFrom-Json
 
 # Path to VBoxManage
 $vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
@@ -54,8 +52,7 @@ function Configure-Network {
         [string]$VMName,
         [string]$NetworkType,
         [string]$AdapterName,
-        [string]$SubnetNetwork,
-        [string]$IPAddress
+        [string]$SubnetNetwork
     )
     switch ($NetworkType) {
         "host-only" {
@@ -90,19 +87,17 @@ function Configure-Network {
             throw "Unsupported network type: $NetworkType"
         }
     }
-
-    # Configure the IP address for the VM
-    & "$vboxManagePath" guestcontrol $VMName run --exe "/sbin/ip" --username "root" --password "password" --wait-stdout -- -4 addr add $IPAddress/$SubnetNetwork dev eth0
-    Log-Message "Configured IP address $IPAddress/$SubnetNetwork for $VMName"
 }
 
-# Configure networks for VM
-for ($i = 0; $i -lt $networkTypes.Count; $i++) {
-    $networkType = $networkTypes[$i]
-    $ipAddress = $ipAddresses[$i]
-    $subnet = $config.EnvironmentVariables.Subnets | Where-Object { $_.Name -eq $networkType }
+# Iterate over the network types and configure each network
+foreach ($networkType in $networkTypes) {
+    $subnet = $config.EnvironmentVariables.Subnets | Where-Object { $_.Name -eq $networkType.Name }
 
-    Configure-Network -VMName $VMName -NetworkType $subnet.Type -AdapterName $subnet.AdapterName -SubnetNetwork $subnet.Network -IPAddress $ipAddress
+    if ($subnet) {
+        Configure-Network -VMName $VMName -NetworkType $subnet.Type -AdapterName $subnet.AdapterName -SubnetNetwork $subnet.Network
+    } else {
+        Log-Message "No subnet configuration found for network type $networkType"
+    }
 }
 
 Log-Message "Script execution completed successfully."
