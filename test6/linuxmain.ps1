@@ -69,7 +69,9 @@ Download-File -url $ConfigureNetworkUrl -output $configureNetworkLocalPath
 Download-File -url $CreateVM1Url -output $createVM1LocalPath
 Download-File -url $ModifyVMSettingsUrl -output $modifyVMSettingsLocalPath
 
+
 # Controleer of het bestand met aangemaakte VM's bestaat
+$createdVMsPath = "$env:Public\created_vms.txt"
 if (-not (Test-Path $createdVMsPath)) {
     New-Item -ItemType File -Force -Path $createdVMsPath
 }
@@ -113,12 +115,11 @@ if ($vmExists) {
         "-VMName", $VMName,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
-        "-NetworkTypes", $NetworkTypes,
-        "-IPAddresses", $IPAddresses,
+        "-NetworkTypes", ($NetworkTypes | ConvertTo-Json -Compress),
         "-Applications", $Applications,
-        "-ConfigureNetworkPath", $configureNetworkLocalPath
+        "-ConfigureNetworkPath", $ConfigureNetworkPath
     )
-    & pwsh -File $modifyVMSettingsLocalPath @arguments
+    & pwsh -File $ConfigureNetworkPath @arguments
 } else {
     Write-Output "Creating new VM: $VMName"
     # Roep het CreateVM1.ps1 script aan met de juiste parameters
@@ -128,10 +129,9 @@ if ($vmExists) {
         "-OSType", $OSType,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
-        "-NetworkTypes", $NetworkTypes,
-        "-IPAddresses", $IPAddresses,
+        "-NetworkTypes", ($NetworkTypes | ConvertTo-Json -Compress),
         "-Applications", $Applications,
-        "-ConfigureNetworkPath", $configureNetworkLocalPath
+        "-ConfigureNetworkPath", $ConfigureNetworkPath
     )
     & pwsh -File $createVM1LocalPath @arguments
 
