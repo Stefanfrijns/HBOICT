@@ -83,30 +83,21 @@ function Configure-Network {
             } else {
                 $adapter = $adapters | Where-Object { $_ -eq $AdapterName }
                 if (-not $adapter) {
-                    throw "No host-only adapter found with name $AdapterName"
+                    $adapter = Create-HostOnlyAdapter
                 }
             }
             & "$vboxManagePath" modifyvm $VMName --nic1 hostonly --hostonlyadapter1 $adapter
             Log-Message "Configured host-only network for $VMName using adapter $adapter"
         }
-        "nat" {
-            & "$vboxManagePath" modifyvm $VMName --nic1 nat
-            Log-Message "Configured NAT network for $VMName"
-        }
         "natnetwork" {
-            $output = & "$vboxManagePath" list natnetworks | Select-String -Pattern "Name: " | ForEach-Object { $_.Line.Split(":")[1].Trim() }
-            $adapter = $output | Where-Object { $_ -eq $AdapterName }
-            if (-not $adapter) {
-                Log-Message "No NAT network found with name $AdapterName. Creating one..."
-                $adapter = Create-NATNetwork -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork
-                Log-Message "Created NAT network $adapter"
-            }
-            & "$vboxManagePath" modifyvm $VMName --nic1 natnetwork --nat-network1 $adapter
-            Log-Message "Configured NAT network for $VMName using adapter $adapter"
+            $natNetName = "NatNetwork_$AdapterName"
+            & "$vboxManagePath" natnetwork add --netname $natNetName --network $SubnetNetwork --dhcp off
+            & "$vboxManagePath" modifyvm $VMName --nic2 natnetwork --nat-network2 $natNetName
+            Log-Message "Configured NAT network for $VMName using network $natNetName"
         }
         "bridged" {
             $adapter = Get-BridgedNetworkAdapters
-            & "$vboxManagePath" modifyvm $VMName --nic1 bridged --bridgeadapter1 $adapter
+            & "$vboxManagePath" modifyvm $VMName --nic3 bridged --bridgeadapter3 $adapter
             Log-Message "Configured bridged network for $VMName using adapter $adapter"
         }
         default {
