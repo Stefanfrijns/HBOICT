@@ -88,25 +88,25 @@ Write-Output "Checking for VM: '$VMName'"
 # Check if the VM already exists
 $vmExists = $false
 foreach ($createdVM in $createdVMs) {
-    Write-Output "Comparing '$VMName' with '$createdVM'"
+    Log-Message "Comparing '$VMName' with '$createdVM'"
     if ($createdVM.Trim() -eq $VMName) {
-        Write-Output "Found existing VM: '$createdVM'"
+        Log-Message "Found existing VM: '$createdVM'"
         $vmExists = $true
         break
     }
 }
 
 if ($vmExists) {
-    Write-Output "VM $VMName already exists. Checking if it's running."
+    Log-Message "VM $VMName already exists. Checking if it's running."
     $vmState = & "$vboxManagePath" showvminfo "$VMName" --machinereadable | Select-String -Pattern "^VMState=" | ForEach-Object { $_.Line.Split("=")[1].Trim('"') }
     if ($vmState -eq "running") {
-        Write-Output "VM $VMName is already running. Prompting user for permission to shut down."
+        Log-Message "VM $VMName is already running. Prompting user for permission to shut down."
         $userInput = Read-Host "VM $VMName is currently running. Do you want to shut it down to apply changes? (yes/no)"
         if ($userInput -eq "yes") {
             & "$vboxManagePath" controlvm $VMName acpipowerbutton
             Start-Sleep -Seconds 10
         } else {
-            Write-Output "Skipping changes for VM $VMName."
+            Log-Message "Skipping changes for VM $VMName."
             exit
         }
     }
@@ -115,13 +115,13 @@ if ($vmExists) {
         "-VMName", $VMName,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
-        "-NetworkTypes", ($NetworkTypes | ConvertTo-Json -Compress),
+        "-NetworkTypes", $NetworkTypes,
         "-Applications", $Applications,
         "-ConfigureNetworkPath", $ConfigureNetworkPath
     )
-    & pwsh -File $ConfigureNetworkPath @arguments
+    & pwsh -File $modifyVMSettingsLocalPath @arguments
 } else {
-    Write-Output "Creating new VM: $VMName"
+    Log-Message "Creating new VM: $VMName"
     # Roep het CreateVM1.ps1 script aan met de juiste parameters
     $arguments = @(
         "-VMName", $VMName,
@@ -129,7 +129,7 @@ if ($vmExists) {
         "-OSType", $OSType,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
-        "-NetworkTypes", ($NetworkTypes | ConvertTo-Json -Compress),
+        "-NetworkTypes", $NetworkTypes,
         "-Applications", $Applications,
         "-ConfigureNetworkPath", $ConfigureNetworkPath
     )
@@ -142,4 +142,4 @@ if ($vmExists) {
 # Herstellen van de oorspronkelijke Execution Policy
 Set-ExecutionPolicy -ExecutionPolicy $previousExecutionPolicy -Scope Process -Force
 
-Write-Output "Script execution completed successfully."
+Log-Message "Script execution completed successfully."
