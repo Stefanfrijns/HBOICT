@@ -2,19 +2,19 @@ param (
     [string]$VMName,
     [string]$NetworkType,
     [string]$AdapterName,
-    [string]$IPAddress,
-    [string]$SubnetMask
+    [string]$SubnetNetwork,
+    [string]$IPAddress
 )
 
 # Validate input parameters
-if (-not $VMName -or -not $NetworkType -or -not $AdapterName) {
-    throw "All parameters must be provided: VMName, NetworkType, AdapterName"
+if (-not $VMName -or -not $NetworkType -or -not $AdapterName -or -not $SubnetNetwork -or -not $IPAddress) {
+    throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork, IPAddress"
 }
 
 # Path to VBoxManage
 $vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
 
-########## Functions ###########
+##########Functions###########
 
 $logFilePath = "$env:Public\ConfigureNetwork.log"
 function Log-Message {
@@ -52,46 +52,37 @@ function Create-HostOnlyAdapter {
     throw "Failed to create host-only adapter."
 }
 
-# Function to create a NAT network
-function Create-NATNetwork {
-    param (
-        [string]$AdapterName,
-        [string]$SubnetNetwork
-    )
-    $output = & "$vboxManagePath" natnetwork add --netname $AdapterName --network $SubnetNetwork --enable
-    if ($output -match "Network added successfully") {
-        Log-Message "NAT network $AdapterName created successfully"
-    } else {
-        Log-Message "Failed to create NAT network: $output"
-        throw "Failed to create NAT network."
-    }
-}
-
 # Function to configure network
 function Configure-Network {
     param (
         [string]$VMName,
         [string]$NetworkType,
         [string]$AdapterName,
-        [string]$IPAddress,
-        [string]$SubnetMask
+        [string]$SubnetNetwork,
+        [string]$IPAddress
     )
     switch ($NetworkType) {
         "host-only" {
             $adapters = Get-HostOnlyNetworkAdapters
-            $adapter = $adapters | Where-Object { $_ -eq $AdapterName }
-            if (-not $adapter) {
-                Log-Message "Host-only adapter $AdapterName not found. Creating one..."
+            if ($adapters.Count -eq 0) {
+                Log-Message "No host-only adapters found. Creating one..."
                 $adapter = Create-HostOnlyAdapter
                 Log-Message "Created host-only adapter $adapter"
+            } else {
+                $adapter = $adapters | Where-Object { $_ -eq $AdapterName }
+                if (-not $adapter) {
+                    $adapter = Create-HostOnlyAdapter
+                    Log-Message "Created host-only adapter $adapter"
+                }
             }
             & "$vboxManagePath" modifyvm $VMName --nic1 hostonly --hostonlyadapter1 $adapter
             Log-Message "Configured host-only network for $VMName using adapter $adapter"
+            & "$vboxManagePath" hostonlyif ipconfig $adapter --ip $IPAddress --netmask $SubnetNetwork
+            Log-Message "Configured IP address $IPAddress and subnet $SubnetNetwork for adapter $adapter"
         }
-        "natnetwork" {
-            Create-NATNetwork -AdapterName $AdapterName -SubnetNetwork "$SubnetMask"
-            & "$vboxManagePath" modifyvm $VMName --nic1 natnetwork --nat-network1 $AdapterName
-            Log-Message "Configured NAT network for $VMName using adapter $AdapterName"
+        "nat" {
+            & "$vboxManagePath" modifyvm $VMName --nic1 nat --natnet1 "$SubnetNetwork"
+            Log-Message "Configured NAT network for $VMName with subnet $SubnetNetwork"
         }
         "bridged" {
             $adapter = Get-BridgedNetworkAdapters
@@ -102,21 +93,14 @@ function Configure-Network {
             throw "Unsupported network type: $NetworkType"
         }
     }
-
-    if ($IPAddress) {
-        Log-Message "Applying IP address configuration for $VMName"
-        $cmd = "ifconfig eth0 $IPAddress netmask $SubnetMask up"
-        & "$vboxManagePath" guestcontrol $VMName run --exe "/bin/sh" --username "username" --password "password" -- "sh" "-c" "$cmd"
-        Log-Message "IP address configuration applied: $IPAddress/$SubnetMask"
-    }
 }
 
-########## EXECUTE ###########
+##########EXECUTE###########
 
 # Call the function to configure the network
 try {
     Log-Message "Starting network configuration for $VMName with network type $NetworkType"
-    Configure-Network -VMName $VMName -NetworkType $NetworkType -AdapterName $AdapterName -IPAddress $IPAddress -SubnetMask $SubnetMask
+    Configure-Network -VMName $VMName -NetworkType $NetworkType -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork -IPAddress $IPAddress
     Log-Message "Network configuration completed for $VMName"
 }
 catch {
