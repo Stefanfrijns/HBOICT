@@ -165,7 +165,9 @@ try {
     $configureNetworkScriptContent = Get-Content -Path $ConfigureNetworkPath -Raw
 
     # Lees de netwerktypes
+    Log-Message "NetworkTypes parameter: $NetworkTypes"
     $networkTypes = $NetworkTypes | ConvertFrom-Json
+    Log-Message "Parsed NetworkTypes: $($networkTypes | ConvertTo-Json -Compress)"
 
     # Configureer de netwerken
     $nicIndex = 1
