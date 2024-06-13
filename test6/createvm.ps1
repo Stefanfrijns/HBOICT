@@ -169,6 +169,11 @@ try {
 
     # Configureer de netwerken
     foreach ($networkType in $networkTypes) {
+        if (-not $networkType.Type -or -not $networkType.AdapterName -or -not $networkType.Network) {
+            Log-Message "Missing parameters for network configuration: Type=$($networkType.Type), AdapterName=$($networkType.AdapterName), Network=$($networkType.Network)"
+            throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork"
+        }
+    
         $args = @(
             "-VMName", $VMName,
             "-NetworkType", $networkType.Type,
