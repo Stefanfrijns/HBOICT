@@ -161,18 +161,14 @@ try {
     & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$clonedVMDKPath"
     Log-Message "Cloned VMDK attached successfully."
 
-    # Configure network settings
-    $arguments = @(
-        "-VMName", $VMName,
-        "-NetworkType", $NetworkType,
-        "-AdapterName", $AdapterName,
-        "-SubnetNetwork", $SubnetNetwork,
-        "-IPAddress", $IPAddress
-    )
-    Log-Message "Configuring network for VM..."
-    & pwsh -File $ConfigureNetworkPath @arguments
-    Log-Message "Network configured successfully."
-
+    # Configure network
+    Log-Message "Configuring network..."
+    $networkTypes = $NetworkTypes | ConvertFrom-Json
+    for ($i = 0; $i -lt $networkTypes.Count; $i++) {
+        $networkType = $networkTypes[$i]
+        & pwsh -File $ConfigureNetworkPath -VMName $VMName -NetworkType $networkType.Type -AdapterName $networkType.AdapterName -SubnetNetwork $networkType.Network
+    }
+    
     Log-Message "Starting VM..."
     & "$vboxManagePath" startvm $VMName --type headless
     Log-Message "VM started successfully."
