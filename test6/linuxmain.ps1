@@ -15,6 +15,22 @@ param (
 $previousExecutionPolicy = Get-ExecutionPolicy
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 
+# Voeg de Log-Message functie toe
+$logFilePath = "$env:Public\LinuxMainScript.log"
+function Log-Message {
+    param (
+        [string]$message
+    )
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "$timestamp - $message"
+    Write-Output $logMessage
+    Add-Content -Path $logFilePath -Value $logMessage
+}
+
+# Tijdelijk wijzigen van de Execution Policy om het uitvoeren van scripts toe te staan
+$previousExecutionPolicy = Get-ExecutionPolicy
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+
 [string]$ConfigureNetworkUrl = "https://raw.githubusercontent.com/Stefanfrijns/HBOICT/main/test6/configurenetwerk.ps1"
 [string]$CreateVM1Url = "https://raw.githubusercontent.com/Stefanfrijns/HBOICT/main/test6/createvm.ps1"
 [string]$ModifyVMSettingsUrl = "https://raw.githubusercontent.com/Stefanfrijns/HBOICT/main/Virtualbox/ModifyVMSettings.ps1"
@@ -28,23 +44,11 @@ function Download-File {
     try {
         $client = New-Object System.Net.WebClient
         $client.DownloadFile($url, $output)
-        Write-Output "Downloaded file from $url to $output"
+        Log-Message "Downloaded file from $url to $output"
     } catch {
-        Write-Output "Failed to download file from $url to $output"
+        Log-Message "Failed to download file from $url to $output"
         throw
     }
-}
-
-# Functie voor logging
-$logFilePath = "$env:Public\LinuxHead.log"
-function Log-Message {
-    param (
-        [string]$message
-    )
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "$timestamp - $message"
-    Write-Output $logMessage
-    Add-Content -Path $logFilePath -Value $logMessage
 }
 
 # Controleer of VBoxManage beschikbaar is
