@@ -59,7 +59,7 @@ if (-not (Test-Path $vboxManagePath)) {
 }
 
 # Lokale paden voor de gedownloade bestanden
-$configureNetworkLocalPath = "$env:Public\Downloads\ConfigureNetwork.ps1"
+$configureNetworkPath = "$env:Public\Downloads\ConfigureNetwork.ps1"
 $createVM1LocalPath = "$env:Public\Downloads\CreateVM1.ps1"
 $modifyVMSettingsLocalPath = "$env:Public\Downloads\ModifyVMSettings.ps1"
 $createdVMsPath = "$env:Public\created_vms.txt"
