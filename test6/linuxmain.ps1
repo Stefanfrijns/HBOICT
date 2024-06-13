@@ -65,7 +65,7 @@ $modifyVMSettingsLocalPath = "$env:Public\Downloads\ModifyVMSettings.ps1"
 $createdVMsPath = "$env:Public\created_vms.txt"
 
 # Download de JSON-bestanden en de scripts
-Download-File -url $ConfigureNetworkUrl -output $configureNetworkLocalPath
+Download-File -url $ConfigureNetworkUrl -output $configureNetworkPath
 Download-File -url $CreateVM1Url -output $createVM1LocalPath
 Download-File -url $ModifyVMSettingsUrl -output $modifyVMSettingsLocalPath
 
