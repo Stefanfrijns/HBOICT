@@ -1,15 +1,20 @@
 param (
     [string]$VMName,
-    [string]$NetworkTypes
+    [string]$NetworkType,
+    [string]$AdapterName,
+    [string]$SubnetNetwork
 )
 
-# Parse NetworkTypes
-$networkTypes = $NetworkTypes | ConvertFrom-Json
+# Validate input parameters
+if (-not $VMName -or -not $NetworkType -or -not $AdapterName -or -not $SubnetNetwork) {
+    throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork"
+}
 
 # Path to VBoxManage
 $vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
 
-# Log functie
+##########Functions###########
+
 $logFilePath = "$env:Public\ConfigureNetwork.log"
 function Log-Message {
     param (
@@ -46,6 +51,20 @@ function Create-HostOnlyAdapter {
     throw "Failed to create host-only adapter."
 }
 
+# Function to create a NAT network
+function Create-NATNetwork {
+    param (
+        [string]$AdapterName,
+        [string]$SubnetNetwork
+    )
+    $output = & "$vboxManagePath" natnetwork add --netname $AdapterName --network $SubnetNetwork --enable --dhcp off 2>&1
+    if ($output -match "Network '(.*)' was successfully created") {
+        return $matches[1]
+    }
+    Log-Message "Failed to create NAT network: $output"
+    throw "Failed to create NAT network."
+}
+
 # Function to configure network
 function Configure-Network {
     param (
@@ -64,7 +83,7 @@ function Configure-Network {
             } else {
                 $adapter = $adapters | Where-Object { $_ -eq $AdapterName }
                 if (-not $adapter) {
-                    $adapter = Create-HostOnlyAdapter
+                    throw "No host-only adapter found with name $AdapterName"
                 }
             }
             & "$vboxManagePath" modifyvm $VMName --nic1 hostonly --hostonlyadapter1 $adapter
@@ -74,14 +93,21 @@ function Configure-Network {
             & "$vboxManagePath" modifyvm $VMName --nic1 nat
             Log-Message "Configured NAT network for $VMName"
         }
+        "natnetwork" {
+            $output = & "$vboxManagePath" list natnetworks | Select-String -Pattern "Name: " | ForEach-Object { $_.Line.Split(":")[1].Trim() }
+            $adapter = $output | Where-Object { $_ -eq $AdapterName }
+            if (-not $adapter) {
+                Log-Message "No NAT network found with name $AdapterName. Creating one..."
+                $adapter = Create-NATNetwork -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork
+                Log-Message "Created NAT network $adapter"
+            }
+            & "$vboxManagePath" modifyvm $VMName --nic1 natnetwork --nat-network1 $adapter
+            Log-Message "Configured NAT network for $VMName using adapter $adapter"
+        }
         "bridged" {
             $adapter = Get-BridgedNetworkAdapters
             & "$vboxManagePath" modifyvm $VMName --nic1 bridged --bridgeadapter1 $adapter
             Log-Message "Configured bridged network for $VMName using adapter $adapter"
-        }
-        "natnetwork" {
-            & "$vboxManagePath" modifyvm $VMName --nic1 natnetwork --nat-network1 $AdapterName
-            Log-Message "Configured NAT Network for $VMName using adapter $AdapterName"
         }
         default {
             throw "Unsupported network type: $NetworkType"
@@ -89,15 +115,17 @@ function Configure-Network {
     }
 }
 
-# Iterate over the network types and configure each network
-foreach ($networkType in $networkTypes) {
-    $subnet = $config.EnvironmentVariables.Subnets | Where-Object { $_.Name -eq $networkType.Name }
+##########EXECUTE###########
 
-    if ($subnet) {
-        Configure-Network -VMName $VMName -NetworkType $subnet.Type -AdapterName $subnet.AdapterName -SubnetNetwork $subnet.Network
-    } else {
-        Log-Message "No subnet configuration found for network type $networkType"
-    }
+# Call the function to configure the network
+try {
+    Log-Message "Starting network configuration for $VMName with network type $NetworkType"
+    Configure-Network -VMName $VMName -NetworkType $NetworkType -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork
+    Log-Message "Network configuration completed for $VMName"
+}
+catch {
+    Log-Message "An error occurred: $($_.Exception.Message)"
+    throw
 }
 
 Log-Message "Script execution completed successfully."
