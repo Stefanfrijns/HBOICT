@@ -2,12 +2,13 @@ param (
     [string]$VMName,
     [string]$NetworkType,
     [string]$AdapterName,
-    [string]$SubnetNetwork
+    [string]$SubnetNetwork,
+    [int]$NicIndex
 )
 
 # Validate input parameters
-if (-not $VMName -or -not $NetworkType -or -not $AdapterName -or -not $SubnetNetwork) {
-    throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork"
+if (-not $VMName -or -not $NetworkType -or -not $AdapterName -or -not $SubnetNetwork -or -not $NicIndex) {
+    throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork, NicIndex"
 }
 
 # Path to VBoxManage
@@ -51,27 +52,14 @@ function Create-HostOnlyAdapter {
     throw "Failed to create host-only adapter."
 }
 
-# Function to create a NAT network
-function Create-NATNetwork {
-    param (
-        [string]$AdapterName,
-        [string]$SubnetNetwork
-    )
-    $output = & "$vboxManagePath" natnetwork add --netname $AdapterName --network $SubnetNetwork --enable --dhcp off 2>&1
-    if ($output -match "Network '(.*)' was successfully created") {
-        return $matches[1]
-    }
-    Log-Message "Failed to create NAT network: $output"
-    throw "Failed to create NAT network."
-}
-
 # Function to configure network
 function Configure-Network {
     param (
         [string]$VMName,
         [string]$NetworkType,
         [string]$AdapterName,
-        [string]$SubnetNetwork
+        [string]$SubnetNetwork,
+        [int]$NicIndex
     )
     switch ($NetworkType) {
         "host-only" {
@@ -86,18 +74,18 @@ function Configure-Network {
                     $adapter = Create-HostOnlyAdapter
                 }
             }
-            & "$vboxManagePath" modifyvm $VMName --nic1 hostonly --hostonlyadapter1 $adapter
+            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
             Log-Message "Configured host-only network for $VMName using adapter $adapter"
         }
         "natnetwork" {
             $natNetName = "NatNetwork_$AdapterName"
             & "$vboxManagePath" natnetwork add --netname $natNetName --network $SubnetNetwork --dhcp off
-            & "$vboxManagePath" modifyvm $VMName --nic2 natnetwork --nat-network2 $natNetName
+            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex natnetwork --nat-network$NicIndex $natNetName
             Log-Message "Configured NAT network for $VMName using network $natNetName"
         }
         "bridged" {
             $adapter = Get-BridgedNetworkAdapters
-            & "$vboxManagePath" modifyvm $VMName --nic3 bridged --bridgeadapter3 $adapter
+            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex bridged --bridgeadapter$NicIndex $adapter
             Log-Message "Configured bridged network for $VMName using adapter $adapter"
         }
         default {
@@ -111,7 +99,7 @@ function Configure-Network {
 # Call the function to configure the network
 try {
     Log-Message "Starting network configuration for $VMName with network type $NetworkType"
-    Configure-Network -VMName $VMName -NetworkType $NetworkType -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork
+    Configure-Network -VMName $VMName -NetworkType $NetworkType -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork -NicIndex $NicIndex
     Log-Message "Network configuration completed for $VMName"
 }
 catch {
