@@ -193,7 +193,7 @@ try {
         $argsString = "-VMName $VMName -NetworkType $($networkType.Type) -AdapterName $($networkType.AdapterName) -SubnetNetwork $($networkType.Network) -NicIndex $nicIndex"
         Log-Message "Running network configuration with args: $argsString"
         
-        Invoke-Command -ScriptBlock ([ScriptBlock]::Create($configureNetworkScriptContent)) -ArgumentList $argsString
+        Invoke-Expression "$ConfigureNetworkPath $argsString"
 
         $nicIndex++
     }
@@ -210,3 +210,4 @@ Log-Message "Script execution completed successfully."
 
 # Herstel de oorspronkelijke Execution Policy
 Set-ExecutionPolicy -ExecutionPolicy $previousExecutionPolicy -Scope Process -Force
+echo test
