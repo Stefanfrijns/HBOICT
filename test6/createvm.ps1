@@ -4,7 +4,7 @@ param (
     [string]$OSType,
     [int]$MemorySize,
     [int]$CPUs,
-    [string]$NetworkTypes, # Dit wordt een JSON-string die we moeten omzetten
+    [string]$NetworkTypes,
     [string]$Applications,
     [string]$ConfigureNetworkPath
 )
@@ -158,11 +158,18 @@ try {
     & "$vboxManagePath" storageattach $VMName --storagectl "SATA_Controller" --port 0 --device 0 --type hdd --medium "$clonedVMDKPath"
     Log-Message "Cloned VMDK attached successfully."
 
-    # Configure network
-    Log-Message "Configuring network..."
+    # Configure network adapters
     $networkTypes = $NetworkTypes | ConvertFrom-Json
-    foreach ($networkType in $networkTypes) {
-        & pwsh -File $ConfigureNetworkPath -VMName $VMName -NetworkType $networkType.Type -AdapterName $networkType.AdapterName -SubnetNetwork $networkType.Network
+    for ($i = 0; $i -lt $networkTypes.Count; $i++) {
+        $networkType = $networkTypes[$i]
+        $arguments = @(
+            "-VMName", $VMName,
+            "-NetworkType", $networkType.Type,
+            "-AdapterName", $networkType.AdapterName,
+            "-SubnetNetwork", $networkType.Network,
+            "-ConfigureNetworkPath", $ConfigureNetworkPath
+        )
+        & pwsh -File $ConfigureNetworkPath @arguments
     }
     
     Log-Message "Starting VM..."
