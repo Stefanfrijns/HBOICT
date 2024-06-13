@@ -166,8 +166,8 @@ try {
         "-VMName", $VMName,
         "-NetworkType", $NetworkType,
         "-AdapterName", $AdapterName,
-        "-IPAddress", $IPAddress,
-        "-SubnetMask", $SubnetNetwork
+        "-SubnetNetwork", $SubnetNetwork,
+        "-IPAddress", $IPAddress
     )
     Log-Message "Configuring network for VM..."
     & pwsh -File $ConfigureNetworkPath @arguments
@@ -185,4 +185,3 @@ Log-Message "Script execution completed successfully."
 
 # Herstel de oorspronkelijke Execution Policy
 Set-ExecutionPolicy -ExecutionPolicy $previousExecutionPolicy -Scope Process -Force
-echo test
