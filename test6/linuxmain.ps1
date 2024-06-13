@@ -15,18 +15,6 @@ param (
 $previousExecutionPolicy = Get-ExecutionPolicy
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 
-# Voeg de Log-Message functie toe
-$logFilePath = "$env:Public\LinuxMainScript.log"
-function Log-Message {
-    param (
-        [string]$message
-    )
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "$timestamp - $message"
-    Write-Output $logMessage
-    Add-Content -Path $logFilePath -Value $logMessage
-}
-
 # Tijdelijk wijzigen van de Execution Policy om het uitvoeren van scripts toe te staan
 $previousExecutionPolicy = Get-ExecutionPolicy
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
@@ -44,17 +32,29 @@ function Download-File {
     try {
         $client = New-Object System.Net.WebClient
         $client.DownloadFile($url, $output)
-        Log-Message "Downloaded file from $url to $output"
+        Write-Output "Downloaded file from $url to $output"
     } catch {
-        Log-Message "Failed to download file from $url to $output"
+        Write-Output "Failed to download file from $url to $output"
         throw
     }
+}
+
+# Log functie
+$logFilePath = "$env:Public\LinuxMainScript.log"
+function Log-Message {
+    param (
+        [string]$message
+    )
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "$timestamp - $message"
+    Write-Output $logMessage
+    Add-Content -Path $logFilePath -Value $logMessage
 }
 
 # Controleer of VBoxManage beschikbaar is
 $vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
 if (-not (Test-Path $vboxManagePath)) {
-    Write-Output "VBoxManage not found. Ensure VirtualBox is installed."
+    Log-Message "VBoxManage not found. Ensure VirtualBox is installed."
     throw "VBoxManage not found."
 }
 
@@ -113,10 +113,8 @@ if ($vmExists) {
         "-VMName", $VMName,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
-        "-NetworkType", $NetworkType,
-        "-AdapterName", $AdapterName,
-        "-SubnetNetwork", $SubnetNetwork,
-        "-IPAddress", $IPAddress,
+        "-NetworkTypes", $NetworkTypes,
+        "-IPAddresses", $IPAddresses,
         "-Applications", $Applications
     )
     & pwsh -File $modifyVMSettingsLocalPath @arguments
@@ -129,10 +127,8 @@ if ($vmExists) {
         "-OSType", $OSType,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
-        "-NetworkType", $NetworkType,
-        "-AdapterName", $AdapterName,
-        "-SubnetNetwork", $SubnetNetwork,
-        "-IPAddress", $IPAddress,
+        "-NetworkTypes", $NetworkTypes,
+        "-IPAddresses", $IPAddresses,
         "-Applications", $Applications
     )
     & pwsh -File $createVM1LocalPath @arguments
