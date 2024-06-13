@@ -4,7 +4,7 @@ param (
     [string]$OSType,
     [int]$MemorySize,
     [int]$CPUs,
-    [array]$NetworkTypes,  # Let op de type array hier
+    [string]$NetworkTypes,  # JSON-string
     [string]$Applications,
     [string]$ConfigureNetworkPath
 )
@@ -113,11 +113,11 @@ if ($vmExists) {
         "-VMName", $VMName,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
-        "-NetworkTypes", ($NetworkTypes | ConvertTo-Json -Compress),
+        "-NetworkTypes", $NetworkTypes,
         "-Applications", $Applications,
-        "-ConfigureNetworkPath", $ConfigureNetworkPath
+        "-ConfigureNetworkPath", $configureNetworkPath
     )
-    & pwsh -File $createVM1LocalPath @arguments
+    & pwsh -File $modifyVMSettingsLocalPath @arguments
 } else {
     Log-Message "Creating new VM: $VMName"
     # Roep het CreateVM1.ps1 script aan met de juiste parameters
@@ -127,9 +127,9 @@ if ($vmExists) {
         "-OSType", $OSType,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
-        "-NetworkTypes", ($NetworkTypes | ConvertTo-Json -Compress),
+        "-NetworkTypes", $NetworkTypes,
         "-Applications", $Applications,
-        "-ConfigureNetworkPath", $ConfigureNetworkPath
+        "-ConfigureNetworkPath", $configureNetworkPath
     )
     & pwsh -File $createVM1LocalPath @arguments
 
