@@ -74,19 +74,20 @@ function Configure-Network {
                     $adapter = Create-HostOnlyAdapter
                 }
             }
+            Log-Message "Configuring host-only network for $VMName using adapter $adapter"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
-            Log-Message "Configured host-only network for $VMName using adapter $adapter"
         }
         "natnetwork" {
             $natNetName = "NatNetwork_$AdapterName"
+            Log-Message "Adding NAT network with name $natNetName and network $SubnetNetwork"
             & "$vboxManagePath" natnetwork add --netname $natNetName --network $SubnetNetwork --dhcp off
+            Log-Message "Configuring NAT network for $VMName using network $natNetName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex natnetwork --nat-network$NicIndex $natNetName
-            Log-Message "Configured NAT network for $VMName using network $natNetName"
         }
         "bridged" {
             $adapter = Get-BridgedNetworkAdapters
+            Log-Message "Configuring bridged network for $VMName using adapter $adapter"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex bridged --bridgeadapter$NicIndex $adapter
-            Log-Message "Configured bridged network for $VMName using adapter $adapter"
         }
         default {
             throw "Unsupported network type: $NetworkType"
