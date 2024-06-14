@@ -44,9 +44,29 @@ function Get-HostOnlyNetworkAdapters {
 
 # Function to create a host-only network adapter
 function Create-HostOnlyAdapter {
+    param (
+        [string]$SubnetNetwork
+    )
+    
+    # Extract network and subnet mask
+    if ($SubnetNetwork -match "^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\/(\d{1,2})$") {
+        $network = $matches[1]
+        $cidr = [int]$matches[2]
+        
+        # Convert CIDR to subnet mask
+        $subnetMask = (0xffffffff << (32 - $cidr)) -band 0xffffffff
+        $subnetMask = [System.Net.IPAddress]::new($subnetMask).ToString()
+    } else {
+        throw "Invalid SubnetNetwork format. Expected format is 'x.x.x.x/x'"
+    }
+
     $output = & "$vboxManagePath" hostonlyif create 2>&1
     if ($output -match "Interface '(\S+)' was successfully created") {
-        return $matches[1]
+        $adapterName = $matches[1]
+        Log-Message "Created host-only adapter $adapterName"
+        
+        & "$vboxManagePath" hostonlyif ipconfig $adapterName --ip $network --netmask $subnetMask
+        return $adapterName
     }
     Log-Message "Failed to create host-only adapter: $output"
     throw "Failed to create host-only adapter."
@@ -66,12 +86,11 @@ function Configure-Network {
             $adapters = Get-HostOnlyNetworkAdapters
             if ($adapters.Count -eq 0) {
                 Log-Message "No host-only adapters found. Creating one..."
-                $adapter = Create-HostOnlyAdapter
-                Log-Message "Created host-only adapter $adapter"
+                $adapter = Create-HostOnlyAdapter -SubnetNetwork $SubnetNetwork
             } else {
                 $adapter = $adapters | Where-Object { $_ -eq $AdapterName }
                 if (-not $adapter) {
-                    $adapter = Create-HostOnlyAdapter
+                    $adapter = Create-HostOnlyAdapter -SubnetNetwork $SubnetNetwork
                 }
             }
             Log-Message "Configuring host-only network for $VMName using adapter $adapter"
