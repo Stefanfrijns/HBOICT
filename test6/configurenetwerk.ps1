@@ -52,14 +52,9 @@ function Create-HostOnlyAdapter {
     if ($SubnetNetwork -match "^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\/(\d{1,2})$") {
         $network = $matches[1]
         $cidr = [int]$matches[2]
-        
+
         # Convert CIDR to subnet mask
-        $subnetMask = [System.Net.IPAddress]::new([bitarray]@(
-            (0xffffffff << (32 - $cidr)) -band 0xff000000,
-            (0xffffffff << (32 - $cidr)) -band 0x00ff0000,
-            (0xffffffff << (32 - $cidr)) -band 0x0000ff00,
-            (0xffffffff << (32 - $cidr)) -band 0x000000ff
-        )).ToString()
+        $subnetMask = [string]::Join('.', (1..4 | ForEach-Object { if ($cidr -ge $_ * 8) { 255 } else { [math]::max(0, 256 - [math]::pow(2, 8 - ($cidr - ($_ - 1) * 8))) } } ))
     } else {
         throw "Invalid SubnetNetwork format. Expected format is 'x.x.x.x/x'"
     }
