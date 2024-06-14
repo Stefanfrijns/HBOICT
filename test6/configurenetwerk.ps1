@@ -54,8 +54,12 @@ function Create-HostOnlyAdapter {
         $cidr = [int]$matches[2]
         
         # Convert CIDR to subnet mask
-        $subnetMask = (0xffffffff << (32 - $cidr)) -band 0xffffffff
-        $subnetMask = [System.Net.IPAddress]::new($subnetMask).ToString()
+        $subnetMask = [System.Net.IPAddress]::new([bitarray]@(
+            (0xffffffff << (32 - $cidr)) -band 0xff000000,
+            (0xffffffff << (32 - $cidr)) -band 0x00ff0000,
+            (0xffffffff << (32 - $cidr)) -band 0x0000ff00,
+            (0xffffffff << (32 - $cidr)) -band 0x000000ff
+        )).ToString()
     } else {
         throw "Invalid SubnetNetwork format. Expected format is 'x.x.x.x/x'"
     }
