@@ -54,7 +54,15 @@ function Create-HostOnlyAdapter {
         $cidr = [int]$matches[2]
 
         # Convert CIDR to subnet mask
-        $subnetMask = [string]::Join('.', (1..4 | ForEach-Object { if ($cidr -ge $_ * 8) { 255 } else { [math]::max(0, 256 - [math]::pow(2, 8 - ($cidr - ($_ - 1) * 8))) } } ))
+        $subnetMask = [string]::Join('.', (0..3 | ForEach-Object { 
+            if ($cidr -ge ($_ + 1) * 8) { 
+                255 
+            } elseif ($cidr -le $_ * 8) { 
+                0 
+            } else { 
+                256 - [math]::pow(2, 8 - ($cidr % 8))
+            }
+        }))
     } else {
         throw "Invalid SubnetNetwork format. Expected format is 'x.x.x.x/x'"
     }
