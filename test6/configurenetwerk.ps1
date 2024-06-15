@@ -13,8 +13,10 @@ if (-not $VMName -or -not $NetworkType -or -not $AdapterName -or -not $SubnetNet
 
 # Path to VBoxManage
 $vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
+$publicFolderPath = "$env:Public\VMNetworkConfigurations"
+$networkConfigFile = "$publicFolderPath\NetworkConfig_$VMName.txt"
 
-##########Functions###########
+########## Functions ###########
 
 $logFilePath = "$env:Public\ConfigureNetwork.log"
 function Log-Message {
@@ -97,19 +99,14 @@ function Configure-Network {
     )
     switch ($NetworkType) {
         "host-only" {
-            $adapters = Get-HostOnlyNetworkAdapters
-            if ($adapters.Count -eq 0) {
+            $adapter = Get-HostOnlyNetworkAdapters | Where-Object { $_ -eq $AdapterName }
+            if (-not $adapter) {
                 Log-Message "No host-only adapters found. Creating one..."
                 $adapter = Create-HostOnlyAdapter
-            } else {
-                $adapter = $adapters | Where-Object { $_ -eq $AdapterName }
-                if (-not $adapter) {
-                    $adapter = Create-HostOnlyAdapter
-                }
             }
             Log-Message "Configuring host-only network for $VMName using adapter $adapter"
-            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
             Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
+            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
         }
         "natnetwork" {
             $natNetName = "NatNetwork_$AdapterName"
@@ -129,12 +126,30 @@ function Configure-Network {
     }
 }
 
-##########EXECUTE###########
+# Save network configuration to file
+function Save-NetworkConfiguration {
+    param (
+        [string]$VMName,
+        [string]$NetworkType,
+        [string]$AdapterName,
+        [string]$SubnetNetwork,
+        [int]$NicIndex
+    )
+    if (-not (Test-Path $publicFolderPath)) {
+        New-Item -ItemType Directory -Path $publicFolderPath -Force
+    }
+    $networkConfig = "VMName: $VMName`nNetworkType: $NetworkType`nAdapterName: $AdapterName`nSubnetNetwork: $SubnetNetwork`nNicIndex: $NicIndex"
+    Set-Content -Path $networkConfigFile -Value $networkConfig
+    Log-Message "Network configuration saved to $networkConfigFile"
+}
+
+########## EXECUTE ###########
 
 # Call the function to configure the network
 try {
     Log-Message "Starting network configuration for $VMName with network type $NetworkType"
     Configure-Network -VMName $VMName -NetworkType $NetworkType -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork -NicIndex $NicIndex
+    Save-NetworkConfiguration -VMName $VMName -NetworkType $NetworkType -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork -NicIndex $NicIndex
     Log-Message "Network configuration completed for $VMName"
 }
 catch {
