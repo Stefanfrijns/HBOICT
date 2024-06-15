@@ -53,6 +53,10 @@ function Create-HostOnlyAdapter {
         $adapterName = $matches[1]
         Log-Message "Created host-only adapter $adapterName"
         return $adapterName
+    } elseif ($output -match "VirtualBox Host-Only Ethernet Adapter") {
+        $adapterName = "VirtualBox Host-Only Ethernet Adapter"
+        Log-Message "Detected host-only adapter named: $adapterName"
+        return $adapterName
     } else {
         throw "Failed to create host-only adapter: $output"
     }
@@ -84,7 +88,7 @@ function Configure-HostOnlyAdapterIP {
         throw "Invalid SubnetNetwork format. Expected format is 'x.x.x.x/x'"
     }
 
-    $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig $adapterName --ip $network --netmask $subnetMask 2>&1
+    $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig "$adapterName" --ip "$network" --netmask "$subnetMask" 2>&1
     Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
 
     if ($ipconfigOutput -notmatch "successfully configured") {
