@@ -107,18 +107,18 @@ function Configure-Network {
             if (-not $adapter) {
                 Log-Message "No host-only adapters found. Creating one..."
                 try {
-                    $adapter = Create-HostOnlyAdapter
-                    Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
+                    $actualAdapterName = Create-HostOnlyAdapter
+                    Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
                 } catch {
                     Log-Message "Failed to create host-only adapter: $($_.Exception.Message)"
                     return  # Continue even if adapter creation fails
                 }
             } else {
-                $adapter = $AdapterName
-                Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
+                $actualAdapterName = $AdapterName
+                Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             }
-            Log-Message "Configuring host-only network for $VMName using adapter $adapter"
-            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
+            Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
+            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
         }
         "natnetwork" {
             $natNetName = "NatNetwork_$AdapterName"
