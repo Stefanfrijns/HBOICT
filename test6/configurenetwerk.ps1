@@ -144,15 +144,13 @@ function Configure-Network {
 function Save-NetworkConfiguration {
     param (
         [string]$VMName,
-        [string]$NetworkType,
-        [string]$AdapterName,
-        [string]$SubnetNetwork,
-        [int]$NicIndex
+        [string]$OriginalAdapterName,
+        [string]$ActualAdapterName
     )
     if (-not (Test-Path $publicFolderPath)) {
         New-Item -ItemType Directory -Path $publicFolderPath -Force
     }
-    $networkConfig = "VMName: $VMName`nNetworkType: $NetworkType`nAdapterName: $AdapterName`nSubnetNetwork: $SubnetNetwork`nNicIndex: $NicIndex"
+    $networkConfig = "VMName: $VMName`nOriginalAdapterName: $OriginalAdapterName`nActualAdapterName: $ActualAdapterName"
     Set-Content -Path $networkConfigFile -Value $networkConfig
     Log-Message "Network configuration saved to $networkConfigFile"
 }
@@ -162,8 +160,47 @@ function Save-NetworkConfiguration {
 # Call the function to configure the network
 try {
     Log-Message "Starting network configuration for $VMName with network type $NetworkType"
-    Configure-Network -VMName $VMName -NetworkType $NetworkType -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork -NicIndex $NicIndex
-    Save-NetworkConfiguration -VMName $VMName -NetworkType $NetworkType -AdapterName $AdapterName -SubnetNetwork $SubnetNetwork -NicIndex $NicIndex
+    $actualAdapterName = ""
+    switch ($NetworkType) {
+        "host-only" {
+            $adapter = Get-HostOnlyNetworkAdapters | Where-Object { $_ -eq $AdapterName }
+            if (-not $adapter) {
+                Log-Message "No host-only adapters found. Creating one..."
+                try {
+                    $actualAdapterName = Create-HostOnlyAdapter
+                } catch {
+                    Log-Message "Failed to create host-only adapter: $($_.Exception.Message)"
+                    return  # Continue even if adapter creation fails
+                }
+            } else {
+                $actualAdapterName = $AdapterName
+            }
+            Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
+            try {
+                Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
+            } catch {
+                Log-Message "Failed to configure IP for adapter ${actualAdapterName}: $($_.Exception.Message)"
+                return  # Continue even if IP configuration fails
+            }
+            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
+        }
+        "natnetwork" {
+            $natNetName = "NatNetwork_$AdapterName"
+            Log-Message "Adding NAT network with name $natNetName and network $SubnetNetwork"
+            & "$vboxManagePath" natnetwork add --netname $natNetName --network $SubnetNetwork --dhcp off
+            Log-Message "Configuring NAT network for $VMName using network $natNetName"
+            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex natnetwork --nat-network$NicIndex $natNetName
+        }
+        "bridged" {
+            $adapter = Get-BridgedNetworkAdapters
+            Log-Message "Configuring bridged network for $VMName using adapter $adapter"
+            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex bridged --bridgeadapter$NicIndex $adapter
+        }
+        default {
+            throw "Unsupported network type: $NetworkType"
+        }
+    }
+    Save-NetworkConfiguration -VMName $VMName -OriginalAdapterName $AdapterName -ActualAdapterName $actualAdapterName
     Log-Message "Network configuration completed for $VMName"
 }
 catch {
