@@ -102,10 +102,20 @@ function Configure-Network {
             $adapter = Get-HostOnlyNetworkAdapters | Where-Object { $_ -eq $AdapterName }
             if (-not $adapter) {
                 Log-Message "No host-only adapters found. Creating one..."
-                $adapter = Create-HostOnlyAdapter
+                try {
+                    $adapter = Create-HostOnlyAdapter
+                } catch {
+                    Log-Message "Failed to create host-only adapter: $($_.Exception.Message)"
+                    return  # Continue even if adapter creation fails
+                }
             }
             Log-Message "Configuring host-only network for $VMName using adapter $adapter"
-            Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
+            try {
+                Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
+            } catch {
+                Log-Message "Failed to configure IP for adapter $adapter: $($_.Exception.Message)"
+                return  # Continue even if IP configuration fails
+            }
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
         }
         "natnetwork" {
@@ -154,7 +164,7 @@ try {
 }
 catch {
     Log-Message "An error occurred: $($_.Exception.Message)"
-    throw
+    # Do not throw to continue execution
 }
 
 Log-Message "Script execution completed successfully."
