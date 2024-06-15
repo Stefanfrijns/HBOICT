@@ -115,6 +115,7 @@ function Configure-Network {
                 }
             } else {
                 $adapter = $AdapterName
+                Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
             }
             Log-Message "Configuring host-only network for $VMName using adapter $adapter"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
