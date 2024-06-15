@@ -31,7 +31,7 @@ function Log-Message {
 
 # Function to create a host-only network adapter
 function Create-HostOnlyAdapter {
-    $output = & "$vboxManagePath" hostonlyif create 2>&1
+    $output = & "$vboxManagePath" hostonlyif create
     Write-Output "hostonlyif create output: $output"
     Log-Message "hostonlyif create output: $output"
 
@@ -73,7 +73,7 @@ function Configure-HostOnlyAdapterIP {
         throw "Invalid SubnetNetwork format. Expected format is 'x.x.x.x/x'"
     }
 
-    $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig "$adapterName" --ip "$network" --netmask "$subnetMask" 2>&1
+    $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig "$adapterName" --ip "$network" --netmask "$subnetMask"
     Write-Output "hostonlyif ipconfig output: $ipconfigOutput"
     Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
 
@@ -171,3 +171,4 @@ catch {
 }
 
 Log-Message "Script execution completed successfully."
+echo test
