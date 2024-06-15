@@ -44,7 +44,22 @@ function Get-HostOnlyNetworkAdapters {
 
 # Function to create a host-only network adapter
 function Create-HostOnlyAdapter {
+    $output = & "$vboxManagePath" hostonlyif create 2>&1
+    Log-Message "hostonlyif create output: $output"
+
+    if ($output -match "Interface '(\S+)' was successfully created") {
+        $adapterName = $matches[1]
+        Log-Message "Created host-only adapter $adapterName"
+        return $adapterName
+    } else {
+        throw "Failed to create host-only adapter: $output"
+    }
+}
+
+# Function to configure IP for host-only adapter
+function Configure-HostOnlyAdapterIP {
     param (
+        [string]$adapterName,
         [string]$SubnetNetwork
     )
 
@@ -67,19 +82,8 @@ function Create-HostOnlyAdapter {
         throw "Invalid SubnetNetwork format. Expected format is 'x.x.x.x/x'"
     }
 
-    $output = & "$vboxManagePath" hostonlyif create 2>&1
-    Log-Message "hostonlyif create output: $output"
-
-    if ($output -match "Interface '(\S+)' was successfully created") {
-        $adapterName = $matches[1]
-        Log-Message "Created host-only adapter $adapterName"
-
-        $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig $adapterName --ip $network --netmask $subnetMask 2>&1
-        Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
-        return $adapterName
-    } else {
-        throw "Failed to create host-only adapter: $output"
-    }
+    $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig $adapterName --ip $network --netmask $subnetMask 2>&1
+    Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
 }
 
 # Function to configure network
@@ -96,15 +100,16 @@ function Configure-Network {
             $adapters = Get-HostOnlyNetworkAdapters
             if ($adapters.Count -eq 0) {
                 Log-Message "No host-only adapters found. Creating one..."
-                $adapter = Create-HostOnlyAdapter -SubnetNetwork $SubnetNetwork
+                $adapter = Create-HostOnlyAdapter
             } else {
                 $adapter = $adapters | Where-Object { $_ -eq $AdapterName }
                 if (-not $adapter) {
-                    $adapter = Create-HostOnlyAdapter -SubnetNetwork $SubnetNetwork
+                    $adapter = Create-HostOnlyAdapter
                 }
             }
             Log-Message "Configuring host-only network for $VMName using adapter $adapter"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
+            Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
         }
         "natnetwork" {
             $natNetName = "NatNetwork_$AdapterName"
