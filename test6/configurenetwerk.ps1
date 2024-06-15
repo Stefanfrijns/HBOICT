@@ -88,7 +88,7 @@ function Configure-HostOnlyAdapterIP {
     Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
 
     if ($ipconfigOutput -notmatch "successfully configured") {
-        throw "Failed to configure IP for adapter $adapterName: $ipconfigOutput"
+        throw "Failed to configure IP for adapter ${adapterName}: $ipconfigOutput"
     }
 }
 
