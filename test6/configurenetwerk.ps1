@@ -86,6 +86,10 @@ function Configure-HostOnlyAdapterIP {
 
     $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig $adapterName --ip $network --netmask $subnetMask 2>&1
     Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
+
+    if ($ipconfigOutput -notmatch "successfully configured") {
+        throw "Failed to configure IP for adapter $adapterName: $ipconfigOutput"
+    }
 }
 
 # Function to configure network
