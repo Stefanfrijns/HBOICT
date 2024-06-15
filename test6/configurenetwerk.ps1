@@ -68,11 +68,14 @@ function Create-HostOnlyAdapter {
     }
 
     $output = & "$vboxManagePath" hostonlyif create 2>&1
+    Log-Message "hostonlyif create output: $output"
+
     if ($output -match "Interface '(\S+)' was successfully created") {
         $adapterName = $matches[1]
         Log-Message "Created host-only adapter $adapterName"
         
-        & "$vboxManagePath" hostonlyif ipconfig $adapterName --ip $network --netmask $subnetMask
+        $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig $adapterName --ip $network --netmask $subnetMask 2>&1
+        Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
         return $adapterName
     }
     Log-Message "Failed to create host-only adapter: $output"
