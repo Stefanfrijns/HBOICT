@@ -113,7 +113,7 @@ function Configure-Network {
             try {
                 Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
             } catch {
-                Log-Message "Failed to configure IP for adapter $adapter: $($_.Exception.Message)"
+                Log-Message "Failed to configure IP for adapter ${adapter}: $($_.Exception.Message)"
                 return  # Continue even if IP configuration fails
             }
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
@@ -168,4 +168,3 @@ catch {
 }
 
 Log-Message "Script execution completed successfully."
-echo test
