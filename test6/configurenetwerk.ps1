@@ -29,6 +29,12 @@ function Log-Message {
     Add-Content -Path $logFilePath -Value $logMessage
 }
 
+# Function to get available host-only network adapters
+function Get-HostOnlyNetworkAdapters {
+    $adapters = & "$vboxManagePath" list hostonlyifs | Select-String -Pattern "Name: " | ForEach-Object { $_.Line.Split(":")[1].Trim() }
+    return $adapters
+}
+
 # Function to create a host-only network adapter
 function Create-HostOnlyAdapter {
     $output = & "$vboxManagePath" hostonlyif create 2>&1
@@ -36,10 +42,10 @@ function Create-HostOnlyAdapter {
 
     if ($output -match "Interface '(.+?)' was successfully created") {
         $adapterName = $matches[1]
-        Write-Output "Created host-only adapter $adapterName"
+        Log-Message "Created host-only adapter $adapterName"
         return $adapterName
     } else {
-        Write-Output "Failed to create host-only adapter, but continuing: $output"
+        Log-Message "Failed to create host-only adapter, but continuing: $output"
         throw "Failed to create or find host-only adapter: $output"
     }
 }
@@ -89,10 +95,31 @@ function Configure-Network {
     )
     switch ($NetworkType) {
         "host-only" {
-            $adapter = Create-HostOnlyAdapter
-            Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
-            Log-Message "Configuring host-only network for $VMName using adapter $adapter"
-            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
+            $adapter = Get-HostOnlyNetworkAdapters | Where-Object { $_ -eq $AdapterName }
+            if (-not $adapter) {
+                Log-Message "No host-only adapters found. Creating one..."
+                try {
+                    $actualAdapterName = Create-HostOnlyAdapter
+                    Log-Message "Actual adapter name after creation: $actualAdapterName"
+                    Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
+                } catch {
+                    Log-Message "Failed to create host-only adapter: $($_.Exception.Message)"
+                    # Continue even if adapter creation fails, but attempt to get last created adapter
+                    $adapters = Get-HostOnlyNetworkAdapters
+                    if ($adapters.Count -gt 0) {
+                        $actualAdapterName = $adapters[-1]
+                        Log-Message "Using last created adapter: $actualAdapterName"
+                        Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
+                    } else {
+                        return  # No adapters found, exit
+                    }
+                }
+            } else {
+                $actualAdapterName = $AdapterName
+                Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
+            }
+            Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
+            & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
         }
         "natnetwork" {
             $natNetName = "NatNetwork_$AdapterName"
@@ -182,7 +209,7 @@ try {
 }
 catch {
     Log-Message "An error occurred: $($_.Exception.Message)"
-    # Do not throw to continue execution
+    throw
 }
 
 Log-Message "Script execution completed successfully."
