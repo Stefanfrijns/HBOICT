@@ -49,13 +49,9 @@ function Create-HostOnlyAdapter {
     $output = & "$vboxManagePath" hostonlyif create 2>&1
     Log-Message "hostonlyif create output: $output"
 
-    if ($output -match "Interface '(.+)' was successfully created") {
+    if ($output -match "Interface '(.+?)' was successfully created") {
         $adapterName = $matches[1]
         Log-Message "Created host-only adapter $adapterName"
-        return $adapterName
-    } elseif ($output -match "VirtualBox Host-Only Ethernet Adapter") {
-        $adapterName = "VirtualBox Host-Only Ethernet Adapter"
-        Log-Message "Detected host-only adapter named: $adapterName"
         return $adapterName
     } else {
         Log-Message "Failed to create host-only adapter, but continuing: $output"
