@@ -108,6 +108,7 @@ function Configure-Network {
                 Log-Message "No host-only adapters found. Creating one..."
                 try {
                     $actualAdapterName = Create-HostOnlyAdapter
+                    Log-Message "Actual adapter name after creation: $actualAdapterName"
                     Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
                 } catch {
                     Log-Message "Failed to create host-only adapter: $($_.Exception.Message)"
