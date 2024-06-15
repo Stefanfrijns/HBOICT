@@ -166,6 +166,7 @@ try {
                 Log-Message "No host-only adapters found. Creating one..."
                 try {
                     $actualAdapterName = Create-HostOnlyAdapter
+                    Log-Message "Actual adapter name after creation: $actualAdapterName"
                     Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
                 } catch {
                     Log-Message "Failed to create host-only adapter: $($_.Exception.Message)"
@@ -194,8 +195,6 @@ try {
             throw "Unsupported network type: $NetworkType"
         }
     }
-
-    # Save the network configuration
     Save-NetworkConfiguration -VMName $VMName -OriginalAdapterName $AdapterName -ActualAdapterName $actualAdapterName
     Log-Message "Network configuration completed for $VMName"
 }
