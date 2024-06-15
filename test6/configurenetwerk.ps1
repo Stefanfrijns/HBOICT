@@ -39,6 +39,7 @@ function Get-HostOnlyNetworkAdapters {
 function Create-HostOnlyAdapter {
     $output = & "$vboxManagePath" hostonlyif create 2>&1
     Write-Output "hostonlyif create output: $output"
+    Log-Message "hostonlyif create output: $output"
 
     if ($output -match "Interface '(.+?)' was successfully created") {
         $adapterName = $matches[1]
@@ -46,7 +47,15 @@ function Create-HostOnlyAdapter {
         return $adapterName
     } else {
         Log-Message "Failed to create host-only adapter, but continuing: $output"
-        throw "Failed to create or find host-only adapter: $output"
+        # Return the name of the last created adapter if available
+        $adapters = Get-HostOnlyNetworkAdapters
+        if ($adapters.Count -gt 0) {
+            $lastAdapterName = $adapters[-1]
+            Log-Message "Using last created adapter: $lastAdapterName"
+            return $lastAdapterName
+        } else {
+            throw "Failed to create or find host-only adapter: $output"
+        }
     }
 }
 
@@ -78,6 +87,7 @@ function Configure-HostOnlyAdapterIP {
 
     $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig "$adapterName" --ip "$network" --netmask "$subnetMask" 2>&1
     Write-Output "hostonlyif ipconfig output: $ipconfigOutput"
+    Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
 
     if ($ipconfigOutput -notmatch "successfully configured") {
         throw "Failed to configure IP for adapter ${adapterName}: $ipconfigOutput"
