@@ -200,6 +200,8 @@ try {
             throw "Unsupported network type: $NetworkType"
         }
     }
+
+    # Save the network configuration
     Save-NetworkConfiguration -VMName $VMName -OriginalAdapterName $AdapterName -ActualAdapterName $actualAdapterName
     Log-Message "Network configuration completed for $VMName"
 }
