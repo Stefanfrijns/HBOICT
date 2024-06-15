@@ -77,9 +77,9 @@ function Create-HostOnlyAdapter {
         $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig $adapterName --ip $network --netmask $subnetMask 2>&1
         Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
         return $adapterName
+    } else {
+        throw "Failed to create host-only adapter: $output"
     }
-    Log-Message "Failed to create host-only adapter: $output"
-    throw "Failed to create host-only adapter."
 }
 
 # Function to configure network
@@ -138,4 +138,3 @@ catch {
 }
 
 Log-Message "Script execution completed successfully."
-echo test
