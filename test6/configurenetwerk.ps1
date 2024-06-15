@@ -47,19 +47,19 @@ function Create-HostOnlyAdapter {
     param (
         [string]$SubnetNetwork
     )
-    
+
     # Extract network and subnet mask
     if ($SubnetNetwork -match "^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\/(\d{1,2})$") {
         $network = $matches[1]
         $cidr = [int]$matches[2]
 
         # Convert CIDR to subnet mask
-        $subnetMask = [string]::Join('.', (0..3 | ForEach-Object { 
-            if ($cidr -ge ($_ + 1) * 8) { 
-                255 
-            } elseif ($cidr -le $_ * 8) { 
-                0 
-            } else { 
+        $subnetMask = [string]::Join('.', (0..3 | ForEach-Object {
+            if ($cidr -ge ($_ + 1) * 8) {
+                255
+            } elseif ($cidr -le $_ * 8) {
+                0
+            } else {
                 256 - [math]::pow(2, 8 - ($cidr % 8))
             }
         }))
@@ -73,7 +73,7 @@ function Create-HostOnlyAdapter {
     if ($output -match "Interface '(\S+)' was successfully created") {
         $adapterName = $matches[1]
         Log-Message "Created host-only adapter $adapterName"
-        
+
         $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig $adapterName --ip $network --netmask $subnetMask 2>&1
         Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
         return $adapterName
