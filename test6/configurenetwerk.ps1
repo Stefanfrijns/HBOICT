@@ -49,7 +49,7 @@ function Create-HostOnlyAdapter {
     $output = & "$vboxManagePath" hostonlyif create 2>&1
     Log-Message "hostonlyif create output: $output"
 
-    if ($output -match "Interface '(\S+)' was successfully created") {
+    if ($output -match "Interface '(.+)' was successfully created") {
         $adapterName = $matches[1]
         Log-Message "Created host-only adapter $adapterName"
         return $adapterName
@@ -108,18 +108,15 @@ function Configure-Network {
                 Log-Message "No host-only adapters found. Creating one..."
                 try {
                     $adapter = Create-HostOnlyAdapter
+                    Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
                 } catch {
                     Log-Message "Failed to create host-only adapter: $($_.Exception.Message)"
                     return  # Continue even if adapter creation fails
                 }
+            } else {
+                $adapter = $AdapterName
             }
             Log-Message "Configuring host-only network for $VMName using adapter $adapter"
-            try {
-                Configure-HostOnlyAdapterIP -adapterName $adapter -SubnetNetwork $SubnetNetwork
-            } catch {
-                Log-Message "Failed to configure IP for adapter ${adapter}: $($_.Exception.Message)"
-                return  # Continue even if IP configuration fails
-            }
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $adapter
         }
         "natnetwork" {
@@ -168,20 +165,16 @@ try {
                 Log-Message "No host-only adapters found. Creating one..."
                 try {
                     $actualAdapterName = Create-HostOnlyAdapter
+                    Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
                 } catch {
                     Log-Message "Failed to create host-only adapter: $($_.Exception.Message)"
                     return  # Continue even if adapter creation fails
                 }
             } else {
                 $actualAdapterName = $AdapterName
+                Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             }
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
-            try {
-                Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
-            } catch {
-                Log-Message "Failed to configure IP for adapter ${actualAdapterName}: $($_.Exception.Message)"
-                return  # Continue even if IP configuration fails
-            }
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
         }
         "natnetwork" {
