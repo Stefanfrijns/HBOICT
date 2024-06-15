@@ -119,7 +119,15 @@ function Configure-Network {
                     Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
                 } catch {
                     Log-Message "Failed to create host-only adapter: $($_.Exception.Message)"
-                    return  # Continue even if adapter creation fails
+                    # Continue even if adapter creation fails, but attempt to get last created adapter
+                    $adapters = Get-HostOnlyNetworkAdapters
+                    if ($adapters.Count -gt 0) {
+                        $actualAdapterName = $adapters[-1]
+                        Log-Message "Using last created adapter: $actualAdapterName"
+                        Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
+                    } else {
+                        return  # No adapters found, exit
+                    }
                 }
             } else {
                 $actualAdapterName = $AdapterName
