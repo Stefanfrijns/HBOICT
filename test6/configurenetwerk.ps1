@@ -38,11 +38,9 @@ function Create-HostOnlyAdapter {
     if ($output -match "Interface '(.+?)' was successfully created") {
         $adapterName = $matches[1]
         Write-Output "Created host-only adapter: $adapterName"
-        
         return $adapterName
     } else {
         Write-Output "Failed to create host-only adapter: $output"
-        
         throw "Failed to create host-only adapter."
     }
 }
