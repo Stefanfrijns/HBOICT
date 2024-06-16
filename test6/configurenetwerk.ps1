@@ -35,12 +35,13 @@ function Create-HostOnlyAdapter {
     Write-Output $output
 
     # Verbeterde regex om alleen de juiste adapternaam te matchen
-    if ($output -match "Interface '([^']+)' was successfully created") {
+    if ($output -match "Interface '(.+?)' was successfully created") {
         $adapterName = $matches[1]
         Write-Output $adapterName
         return $adapterName
     } else {
         Write-Output "Failed to create host-only adapter: $output"
+        Log-Message "Failed to create host-only adapter: $output"
         throw "Failed to create host-only adapter."
     }
 }
@@ -93,6 +94,10 @@ function Configure-Network {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
             Log-Message "Actual adapter name after creation: $actualAdapterName"
+
+            # Remove duplicates from the adapter name
+            $actualAdapterName = ($actualAdapterName -split ' ') | Select-Object -First 5 -Skip 4 -Join ' '
+
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
@@ -141,8 +146,8 @@ try {
             $actualAdapterName = Create-HostOnlyAdapter
             Log-Message "Actual adapter name after creation: $actualAdapterName"
 
-            # Ensure the adapter name is unique (remove duplicates)
-            $actualAdapterName = ($actualAdapterName -split '\s+') | Select-Object -First 1
+            # Remove duplicates from the adapter name
+            $actualAdapterName = ($actualAdapterName -split ' ') | Select-Object -Unique -Join ' '
 
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
