@@ -27,13 +27,17 @@ function Download-File {
         [string]$url,
         [string]$output
     )
-    try {
-        $client = New-Object System.Net.WebClient
-        $client.DownloadFile($url, $output)
-        Write-Output "Downloaded file from $url to $output"
-    } catch {
-        Write-Output "Failed to download file from $url to $output"
-        throw
+    if (-not (Test-Path $output)) {
+        try {
+            $client = New-Object System.Net.WebClient
+            $client.DownloadFile($url, $output)
+            Write-Output "Downloaded file from $url to $output"
+        } catch {
+            Write-Output "Failed to download file from $url to $output"
+            throw
+        }
+    } else {
+        Write-Output "File already exists: $output. Skipping download."
     }
 }
 
