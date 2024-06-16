@@ -35,7 +35,7 @@ function Create-HostOnlyAdapter {
     Write-Output $output
 
     # Verbeterde regex om alleen de juiste adapternaam te matchen
-    if ($output -match "Interface '(.+?)' was successfully created") {
+    if ($output -match "Interface '([^']+)' was successfully created") {
         $adapterName = $matches[1]
         Write-Output $adapterName
         return $adapterName
@@ -146,8 +146,10 @@ try {
             $actualAdapterName = Create-HostOnlyAdapter
             Log-Message "Actual adapter name after creation: $actualAdapterName"
 
-            # Remove duplicates from the adapter name
-            $actualAdapterName = ($actualAdapterName -split ' ' | Select-Object -Unique) -join ' '
+            # Extract only the relevant part of the adapter name
+            if ($actualAdapterName -match "VirtualBox Host-Only Ethernet Adapter #\d+") {
+                $actualAdapterName = $matches[0]
+            }
 
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
@@ -178,4 +180,3 @@ catch {
 }
 
 Log-Message "Script execution completed successfully."
-echo test
