@@ -14,7 +14,6 @@ if (-not $VMName -or -not $NetworkType -or -not $AdapterName -or -not $SubnetNet
 # Path to VBoxManage
 $vboxManagePath = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
 $publicFolderPath = "$env:Public\VMNetworkConfigurations"
-$networkConfigFile = "$publicFolderPath\NetworkConfig.json"
 $controlFilePath = "$publicFolderPath\controlehostonly.txt"
 
 # Function to create a host-only network adapter
@@ -64,20 +63,31 @@ function Configure-HostOnlyAdapterIP {
     }
 }
 
+# Function to get the course name from the VM name
+function Get-CourseName {
+    param (
+        [string]$vmName
+    )
+    return ($vmName -split '_')[0]
+}
+
 # Save network configuration to file
 function Save-NetworkConfiguration {
     param (
+        [string]$courseName,
         [string]$VMName,
         [string]$OriginalAdapterName,
         [string]$ActualAdapterName
     )
+    $courseConfigFile = "$publicFolderPath\NetworkConfig_$courseName.json"
+
     if (-not (Test-Path $publicFolderPath)) {
         New-Item -ItemType Directory -Path $publicFolderPath -Force
     }
 
     $networkConfig = @()
-    if (Test-Path $networkConfigFile) {
-        $networkConfig = (Get-Content -Path $networkConfigFile -Raw | ConvertFrom-Json)
+    if (Test-Path $courseConfigFile) {
+        $networkConfig = (Get-Content -Path $courseConfigFile -Raw | ConvertFrom-Json)
         if (-not ($networkConfig -is [System.Collections.ArrayList])) {
             $networkConfig = @($networkConfig)
         }
@@ -89,20 +99,21 @@ function Save-NetworkConfiguration {
         ActualAdapterName   = $ActualAdapterName
     }
 
-    $networkConfig | ConvertTo-Json -Compress | Set-Content -Path $networkConfigFile
-    Write-Output "Network configuration saved to $networkConfigFile"
+    $networkConfig | ConvertTo-Json -Compress | Set-Content -Path $courseConfigFile
+    Write-Output "Network configuration saved to $courseConfigFile"
 }
 
 # Function to get the actual adapter name from the configuration file
 function Get-ActualAdapterName {
     param (
-        [string]$VMName,
+        [string]$courseName,
         [string]$OriginalAdapterName
     )
+    $courseConfigFile = "$publicFolderPath\NetworkConfig_$courseName.json"
 
-    if (Test-Path $networkConfigFile) {
-        $configContent = Get-Content -Path $networkConfigFile -Raw | ConvertFrom-Json
-        $config = $configContent | Where-Object { $_.VMName -eq $VMName -and $_.OriginalAdapterName -eq $OriginalAdapterName }
+    if (Test-Path $courseConfigFile) {
+        $configContent = Get-Content -Path $courseConfigFile -Raw | ConvertFrom-Json
+        $config = $configContent | Where-Object { $_.OriginalAdapterName -eq $OriginalAdapterName }
         if ($config) {
             return $config.ActualAdapterName
         }
@@ -124,21 +135,23 @@ if (-not (Test-Path $controlFilePath) -or (Get-Content -Path $controlFilePath -R
 
 try {
     Write-Output "Starting network configuration for $VMName with network type $NetworkType"
+    
+    $courseName = Get-CourseName -vmName $VMName
+    $actualAdapterName = Get-ActualAdapterName -courseName $courseName -OriginalAdapterName $AdapterName
 
-    $actualAdapterName = Get-ActualAdapterName -VMName $VMName -OriginalAdapterName $AdapterName
     if ($actualAdapterName) {
         Write-Output "Using existing adapter $actualAdapterName for $VMName"
     } else {
         if ($NetworkType -eq "host-only") {
             $actualAdapterName = Create-HostOnlyAdapter
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
-            Save-NetworkConfiguration -VMName $VMName -OriginalAdapterName $AdapterName -ActualAdapterName $actualAdapterName
+            Save-NetworkConfiguration -courseName $courseName -VMName $VMName -OriginalAdapterName $AdapterName -ActualAdapterName $actualAdapterName
         } elseif ($NetworkType -eq "natnetwork") {
             $natNetName = "NatNetwork_$AdapterName"
             Write-Output "Adding NAT network with name $natNetName and network $SubnetNetwork"
             & "$vboxManagePath" natnetwork add --netname $natNetName --network $SubnetNetwork --dhcp off
             $actualAdapterName = $natNetName
-            Save-NetworkConfiguration -VMName $VMName -OriginalAdapterName $AdapterName -ActualAdapterName $actualAdapterName
+            Save-NetworkConfiguration -courseName $courseName -VMName $VMName -OriginalAdapterName $AdapterName -ActualAdapterName $actualAdapterName
         } else {
             throw "Unsupported network type: $NetworkType"
         }
