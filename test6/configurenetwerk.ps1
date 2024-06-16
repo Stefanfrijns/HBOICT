@@ -172,3 +172,4 @@ catch {
 
 Log-Message "Script execution completed successfully."
 echo test
+echo test
