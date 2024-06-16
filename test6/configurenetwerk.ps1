@@ -31,13 +31,13 @@ function Log-Message {
 
 # Function to create a host-only network adapter
 function Create-HostOnlyAdapter {
-    $output = & "$vboxManagePath" hostonlyif create 2>&1
+    $output = & "$vboxManagePath" hostonlyif create
     Write-Output $output
 
     # Verbeterde regex om alleen de juiste adapternaam te matchen
-    if ($output -match "Interface 'VirtualBox Host-Only Ethernet Adapter #[0-9]+' was successfully created") {
-        $adapterName = $matches[1]
-        $adapterName = $output -replace ".*Interface '([^']+)'.*", '$1'
+    if ($output -match "Interface 'VirtualBox Host-Only Ethernet Adapter #(\d+)' was successfully created") {
+        $adapterNumber = $matches[1]
+        $adapterName = "VirtualBox Host-Only Ethernet Adapter #$adapterNumber"
         Write-Output "Created adapter name: $adapterName"
         return $adapterName
     } else {
@@ -101,7 +101,7 @@ function Configure-Network {
         }
         "natnetwork" {
             $natNetName = "NatNetwork_$AdapterName"
-            Log-Message "Adding NAT network with name $natNetName and network $SubnetNetwork"
+            Log-Message "Adding NAT network met name $natNetName en netwerk $SubnetNetwork"
             & "$vboxManagePath" natnetwork add --netname $natNetName --network $SubnetNetwork --dhcp off
             Log-Message "Configuring NAT network for $VMName using network $natNetName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex natnetwork --nat-network$NicIndex $natNetName
@@ -148,7 +148,7 @@ try {
         }
         "natnetwork" {
             $natNetName = "NatNetwork_$AdapterName"
-            Log-Message "Adding NAT network with name $natNetName and network $SubnetNetwork"
+            Log-Message "Adding NAT network met name $natNetName en netwerk $SubnetNetwork"
             & "$vboxManagePath" natnetwork add --netname $natNetName --network $SubnetNetwork --dhcp off
             Log-Message "Configuring NAT network for $VMName using network $natNetName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex natnetwork --nat-network$NicIndex $natNetName
@@ -171,3 +171,4 @@ catch {
 }
 
 Log-Message "Script execution completed successfully."
+echo test
