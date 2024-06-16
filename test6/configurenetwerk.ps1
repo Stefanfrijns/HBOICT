@@ -32,18 +32,14 @@ function Log-Message {
 # Function to create a host-only network adapter
 function Create-HostOnlyAdapter {
     $output = & "$vboxManagePath" hostonlyif create
-    Write-Output $output
-    Log-Message "hostonlyif create output: $output"
 
     # Verbeterde regex om alleen de juiste adapternaam te matchen
     if ($output -match "Interface '(.+?)' was successfully created") {
         $adapterName = $matches[1]
         Write-Output $adapterName
-        Log-Message "Created host-only adapter: $adapterName"
         return $adapterName
     } else {
         Write-Output "Failed to create host-only adapter: $output"
-        Log-Message "Failed to create host-only adapter: $output"
         throw "Failed to create host-only adapter."
     }
 }
@@ -95,7 +91,7 @@ function Configure-Network {
     switch ($NetworkType) {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
-            Log-Message "Actual adapter name after creation: $actualAdapterName"
+            Write-Output "Actual adapter name after creation: $actualAdapterName"
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
@@ -142,7 +138,7 @@ try {
     switch ($NetworkType) {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
-            Log-Message "Actual adapter name after creation: $actualAdapterName"
+            Write-Output "Actual adapter name after creation: $actualAdapterName"
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
