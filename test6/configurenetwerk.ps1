@@ -32,14 +32,18 @@ function Log-Message {
 # Function to create a host-only network adapter
 function Create-HostOnlyAdapter {
     $output = & "$vboxManagePath" hostonlyif create
+    Write-Output $output
 
     # Verbeterde regex om alleen de juiste adapternaam te matchen
-    if ($output -match "Interface '(.+?)' was successfully created") {
+    if ($output -match "Interface '([^']+)' was successfully created") {
         $adapterName = $matches[1]
-        Write-Output $adapterName
+        Write-Output "Created host-only adapter: $adapterName"
+        # Verwijder eventuele duplicaten
+        $adapterName = $adapterName -split " " | Select-Object -First 1
         return $adapterName
     } else {
         Write-Output "Failed to create host-only adapter: $output"
+        Log-Message "Failed to create host-only adapter: $output"
         throw "Failed to create host-only adapter."
     }
 }
