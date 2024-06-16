@@ -95,6 +95,13 @@ function Configure-Network {
             $actualAdapterName = Create-HostOnlyAdapter
             Log-Message "Actual adapter name after creation: $actualAdapterName"
 
+            # Extract only the relevant part of the adapter name
+            if ($actualAdapterName -match "VirtualBox Host-Only Ethernet Adapter #\d+") {
+                $actualAdapterName = $matches[0]
+            } else {
+                throw "Failed to extract adapter name from output."
+            }
+
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
@@ -146,6 +153,8 @@ try {
             # Extract only the relevant part of the adapter name
             if ($actualAdapterName -match "VirtualBox Host-Only Ethernet Adapter #\d+") {
                 $actualAdapterName = $matches[0]
+            } else {
+                throw "Failed to extract adapter name from output."
             }
 
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
