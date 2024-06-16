@@ -31,12 +31,13 @@ function Log-Message {
 
 # Function to create a host-only network adapter
 function Create-HostOnlyAdapter {
-    $output = & "$vboxManagePath" hostonlyif create
+    $output = & "$vboxManagePath" hostonlyif create 2>&1
     Write-Output $output
 
     # Verbeterde regex om alleen de juiste adapternaam te matchen
-    if ($output -match "Interface '(.+?)' was successfully created") {
+    if ($output -match "Interface 'VirtualBox Host-Only Ethernet Adapter #[0-9]+' was successfully created") {
         $adapterName = $matches[1]
+        $adapterName = $output -replace ".*Interface '([^']+)'.*", '$1'
         Write-Output "Created adapter name: $adapterName"
         return $adapterName
     } else {
