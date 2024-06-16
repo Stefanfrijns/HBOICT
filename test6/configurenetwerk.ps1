@@ -95,9 +95,6 @@ function Configure-Network {
             $actualAdapterName = Create-HostOnlyAdapter
             Log-Message "Actual adapter name after creation: $actualAdapterName"
 
-            # Remove duplicates from the adapter name
-            $actualAdapterName = ($actualAdapterName -split ' ' | Select-Object -Unique) -join ' '
-
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
