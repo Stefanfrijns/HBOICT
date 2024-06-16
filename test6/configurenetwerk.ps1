@@ -33,16 +33,16 @@ function Log-Message {
 function Create-HostOnlyAdapter {
     $output = & "$vboxManagePath" hostonlyif create
     Write-Output "hostonlyif create output: $output"
-    Log-Message "hostonlyif create output: $output"
+    
 
     if ($output -match "Interface '(.+?)' was successfully created") {
         $adapterName = $matches[1]
         Write-Output "Created host-only adapter: $adapterName"
-        Log-Message "Created host-only adapter: $adapterName"
+        
         return $adapterName
     } else {
         Write-Output "Failed to create host-only adapter: $output"
-        Log-Message "Failed to create host-only adapter: $output"
+        
         throw "Failed to create host-only adapter."
     }
 }
