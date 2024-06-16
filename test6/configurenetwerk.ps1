@@ -35,7 +35,7 @@ function Create-HostOnlyAdapter {
     Write-Output $output
 
     # Verbeterde regex om alleen de juiste adapternaam te matchen
-    if ($output -match "Interface '(.+?)' was successfully created") {
+    if ($output -match "Interface '([^']+)' was successfully created") {
         $adapterName = $matches[1]
         Write-Output $adapterName
         return $adapterName
@@ -92,12 +92,7 @@ function Configure-Network {
     switch ($NetworkType) {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
-            Write-Output "Actual adapter name after creation: $actualAdapterName"
-
-            # Ensure the adapter name is unique (remove duplicates)
-            $actualAdapterName = ($actualAdapterName -split '\s+') | Select-Object -Unique | Out-String
-            $actualAdapterName = $actualAdapterName.Trim()  # Remove any leading/trailing whitespace
-
+            Log-Message "Actual adapter name after creation: $actualAdapterName"
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
@@ -144,11 +139,10 @@ try {
     switch ($NetworkType) {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
-            Write-Output "Actual adapter name after creation: $actualAdapterName"
+            Log-Message "Actual adapter name after creation: $actualAdapterName"
 
             # Ensure the adapter name is unique (remove duplicates)
-            $actualAdapterName = ($actualAdapterName -split '\s+') | Select-Object -Unique | Out-String
-            $actualAdapterName = $actualAdapterName.Trim()  # Remove any leading/trailing whitespace
+            $actualAdapterName = ($actualAdapterName -split '\s+') | Select-Object -First 1
 
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
