@@ -20,7 +20,7 @@ $networkConfigFile = "$publicFolderPath\NetworkConfig_$VMName.txt"
 
 # Function to create a host-only network adapter
 function Create-HostOnlyAdapter {
-    $output = & "$vboxManagePath" hostonlyif create 2>&1
+    $output = & "$vboxManagePath" hostonlyif create
     Write-Output $output
 
     if ($output -match "Interface '(.+?)' was successfully created") {
@@ -59,7 +59,7 @@ function Configure-HostOnlyAdapterIP {
         throw "Invalid SubnetNetwork format. Expected format is 'x.x.x.x/x'"
     }
 
-    $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig "$adapterName" --ip "$network" --netmask "$subnetMask" 2>&1
+    $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig "$adapterName" --ip "$network" --netmask "$subnetMask"
     Write-Output "hostonlyif ipconfig output: $ipconfigOutput"
 
     if ($ipconfigOutput -notmatch "successfully configured") {
