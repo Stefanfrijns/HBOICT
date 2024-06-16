@@ -33,11 +33,13 @@ function Log-Message {
 function Create-HostOnlyAdapter {
     $output = & "$vboxManagePath" hostonlyif create
     Write-Output $output
+    Log-Message "hostonlyif create output: $output"
 
     # Verbeterde regex om alleen de juiste adapternaam te matchen
-    if ($output -match "Interface\s+'([^']+)' was successfully created") {
+    if ($output -match "Interface '(.+?)' was successfully created") {
         $adapterName = $matches[1]
         Write-Output $adapterName
+        Log-Message "Created host-only adapter: $adapterName"
         return $adapterName
     } else {
         Write-Output "Failed to create host-only adapter: $output"
@@ -170,4 +172,3 @@ catch {
 }
 
 Log-Message "Script execution completed successfully."
-
