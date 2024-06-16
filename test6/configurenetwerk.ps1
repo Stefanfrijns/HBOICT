@@ -96,7 +96,7 @@ function Configure-Network {
             Log-Message "Actual adapter name after creation: $actualAdapterName"
 
             # Remove duplicates from the adapter name
-            $actualAdapterName = ($actualAdapterName -split ' ') | Select-Object -First 5 -Skip 4 -Join ' '
+            $actualAdapterName = ($actualAdapterName -split ' ' | Select-Object -Unique) -join ' '
 
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
@@ -147,7 +147,7 @@ try {
             Log-Message "Actual adapter name after creation: $actualAdapterName"
 
             # Remove duplicates from the adapter name
-            $actualAdapterName = ($actualAdapterName -split ' ') | Select-Object -Unique -Join ' '
+            $actualAdapterName = ($actualAdapterName -split ' ' | Select-Object -Unique) -join ' '
 
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
@@ -178,3 +178,4 @@ catch {
 }
 
 Log-Message "Script execution completed successfully."
+echo test
