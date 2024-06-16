@@ -18,17 +18,31 @@ $networkConfigFile = "$publicFolderPath\NetworkConfig_$VMName.txt"
 
 ########## Functions ###########
 
+$logFilePath = "$env:Public\ConfigureNetwork.log"
+function Log-Message {
+    param (
+        [string]$message
+    )
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "$timestamp - $message"
+    Write-Output $logMessage
+    Add-Content -Path $logFilePath -Value $logMessage
+}
+
 # Function to create a host-only network adapter
 function Create-HostOnlyAdapter {
     $output = & "$vboxManagePath" hostonlyif create
     Write-Output $output
+    Log-Message "hostonlyif create output: $output"
 
-    if ($output -match "Interface '(.+?)' was successfully created") {
+    # Verbeterde regex om alleen de juiste adapternaam te matchen
+    if ($output -match "Interface\s+'([^']+)' was successfully created") {
         $adapterName = $matches[1]
         Write-Output $adapterName
         return $adapterName
     } else {
         Write-Output "Failed to create host-only adapter: $output"
+        Log-Message "Failed to create host-only adapter: $output"
         throw "Failed to create host-only adapter."
     }
 }
@@ -61,6 +75,7 @@ function Configure-HostOnlyAdapterIP {
 
     $ipconfigOutput = & "$vboxManagePath" hostonlyif ipconfig "$adapterName" --ip "$network" --netmask "$subnetMask"
     Write-Output "hostonlyif ipconfig output: $ipconfigOutput"
+    Log-Message "hostonlyif ipconfig output: $ipconfigOutput"
 
     if ($ipconfigOutput -notmatch "successfully configured") {
         throw "Failed to configure IP for adapter ${adapterName}: $ipconfigOutput"
@@ -79,21 +94,21 @@ function Configure-Network {
     switch ($NetworkType) {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
-            Write-Output "Actual adapter name after creation: $actualAdapterName"
+            Log-Message "Actual adapter name after creation: $actualAdapterName"
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
-            Write-Output "Configuring host-only network for $VMName using adapter $actualAdapterName"
+            Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
         }
         "natnetwork" {
             $natNetName = "NatNetwork_$AdapterName"
-            Write-Output "Adding NAT network with name $natNetName and network $SubnetNetwork"
+            Log-Message "Adding NAT network with name $natNetName and network $SubnetNetwork"
             & "$vboxManagePath" natnetwork add --netname $natNetName --network $SubnetNetwork --dhcp off
-            Write-Output "Configuring NAT network for $VMName using network $natNetName"
+            Log-Message "Configuring NAT network for $VMName using network $natNetName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex natnetwork --nat-network$NicIndex $natNetName
         }
         "bridged" {
             $adapter = Get-BridgedNetworkAdapters
-            Write-Output "Configuring bridged network for $VMName using adapter $adapter"
+            Log-Message "Configuring bridged network for $VMName using adapter $adapter"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex bridged --bridgeadapter$NicIndex $adapter
         }
         default {
@@ -114,33 +129,33 @@ function Save-NetworkConfiguration {
     }
     $networkConfig = "VMName: $VMName`nOriginalAdapterName: $OriginalAdapterName`nActualAdapterName: $ActualAdapterName"
     Set-Content -Path $networkConfigFile -Value $networkConfig
-    Write-Output "Network configuration saved to $networkConfigFile"
+    Log-Message "Network configuration saved to $networkConfigFile"
 }
 
 ########## EXECUTE ###########
 
 # Call the function to configure the network
 try {
-    Write-Output "Starting network configuration for $VMName with network type $NetworkType"
+    Log-Message "Starting network configuration for $VMName with network type $NetworkType"
     $actualAdapterName = ""
     switch ($NetworkType) {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
-            Write-Output "Actual adapter name after creation: $actualAdapterName"
+            Log-Message "Actual adapter name after creation: $actualAdapterName"
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
-            Write-Output "Configuring host-only network for $VMName using adapter $actualAdapterName"
+            Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
         }
         "natnetwork" {
             $natNetName = "NatNetwork_$AdapterName"
-            Write-Output "Adding NAT network with name $natNetName and network $SubnetNetwork"
+            Log-Message "Adding NAT network with name $natNetName and network $SubnetNetwork"
             & "$vboxManagePath" natnetwork add --netname $natNetName --network $SubnetNetwork --dhcp off
-            Write-Output "Configuring NAT network for $VMName using network $natNetName"
+            Log-Message "Configuring NAT network for $VMName using network $natNetName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex natnetwork --nat-network$NicIndex $natNetName
         }
         "bridged" {
             $adapter = Get-BridgedNetworkAdapters
-            Write-Output "Configuring bridged network for $VMName using adapter $adapter"
+            Log-Message "Configuring bridged network for $VMName using adapter $adapter"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex bridged --bridgeadapter$NicIndex $adapter
         }
         default {
@@ -148,11 +163,12 @@ try {
         }
     }
     Save-NetworkConfiguration -VMName $VMName -OriginalAdapterName $AdapterName -ActualAdapterName $actualAdapterName
-    Write-Output "Network configuration completed for $VMName"
+    Log-Message "Network configuration completed for $VMName"
 }
 catch {
-    Write-Output "An error occurred: $($_.Exception.Message)"
+    Log-Message "An error occurred: $($_.Exception.Message)"
     throw
 }
 
-Write-Output "Script execution completed successfully."
+Log-Message "Script execution completed successfully."
+echo test
