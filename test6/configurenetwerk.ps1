@@ -35,9 +35,9 @@ function Create-HostOnlyAdapter {
     Write-Output $output
 
     # Verbeterde regex om alleen de juiste adapternaam te matchen
-    if ($output -match "Interface '([^']+)' was successfully created") {
+    if ($output -match "Interface '(.+?)' was successfully created") {
         $adapterName = $matches[1]
-        Write-Output $adapterName
+        Write-Output "Created adapter name: $adapterName"
         return $adapterName
     } else {
         Write-Output "Failed to create host-only adapter: $output"
@@ -94,14 +94,6 @@ function Configure-Network {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
             Log-Message "Actual adapter name after creation: $actualAdapterName"
-
-            # Extract only the relevant part of the adapter name
-            if ($actualAdapterName -match "VirtualBox Host-Only Ethernet Adapter #\d+") {
-                $actualAdapterName = $matches[0]
-            } else {
-                throw "Failed to extract adapter name from output."
-            }
-
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
@@ -149,14 +141,6 @@ try {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
             Log-Message "Actual adapter name after creation: $actualAdapterName"
-
-            # Extract only the relevant part of the adapter name
-            if ($actualAdapterName -match "VirtualBox Host-Only Ethernet Adapter #\d+") {
-                $actualAdapterName = $matches[0]
-            } else {
-                throw "Failed to extract adapter name from output."
-            }
-
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
