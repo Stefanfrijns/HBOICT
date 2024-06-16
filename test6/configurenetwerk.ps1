@@ -35,15 +35,12 @@ function Create-HostOnlyAdapter {
     Write-Output $output
 
     # Verbeterde regex om alleen de juiste adapternaam te matchen
-    if ($output -match "Interface '([^']+)' was successfully created") {
+    if ($output -match "Interface '(.+?)' was successfully created") {
         $adapterName = $matches[1]
-        Write-Output "Created host-only adapter: $adapterName"
-        # Verwijder eventuele duplicaten
-        $adapterName = $adapterName -split " " | Select-Object -First 1
+        Write-Output $adapterName
         return $adapterName
     } else {
         Write-Output "Failed to create host-only adapter: $output"
-        Log-Message "Failed to create host-only adapter: $output"
         throw "Failed to create host-only adapter."
     }
 }
@@ -96,6 +93,11 @@ function Configure-Network {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
             Write-Output "Actual adapter name after creation: $actualAdapterName"
+
+            # Ensure the adapter name is unique (remove duplicates)
+            $actualAdapterName = ($actualAdapterName -split '\s+') | Select-Object -Unique | Out-String
+            $actualAdapterName = $actualAdapterName.Trim()  # Remove any leading/trailing whitespace
+
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
@@ -143,6 +145,11 @@ try {
         "host-only" {
             $actualAdapterName = Create-HostOnlyAdapter
             Write-Output "Actual adapter name after creation: $actualAdapterName"
+
+            # Ensure the adapter name is unique (remove duplicates)
+            $actualAdapterName = ($actualAdapterName -split '\s+') | Select-Object -Unique | Out-String
+            $actualAdapterName = $actualAdapterName.Trim()  # Remove any leading/trailing whitespace
+
             Configure-HostOnlyAdapterIP -adapterName $actualAdapterName -SubnetNetwork $SubnetNetwork
             Log-Message "Configuring host-only network for $VMName using adapter $actualAdapterName"
             & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
