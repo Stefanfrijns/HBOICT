@@ -1,43 +1,95 @@
 {
-    "environments": [
-        {
-            "name": "Development Environment",
-            "vms": [
-                {
-                    "type": "Ubuntu",
-                    "count": 3,
-                    "config": {
-                        "vhd_url": "https://dlconusc1.linuxvmimages.com/046389e06777452db2ccf9a32efa3760:virtualbox/U/24.04/UbuntuServer_24.04_VB.7z",
-                        "os_type": "Ubuntu_64",
-                        "memory_size": 2048,
-                        "cpus": 2,
-                        "applications": [
-                            "cURL",
-                            "Wget2",
-                            "Nano",
-                            "Powershell",
-                            "7-ZIP"
-                        ]
-                    }
-                },
-                {
-                    "type": "Alpine",
-                    "count": 1,
-                    "config": {
-                        "vhd_url": "https://example.com/alpine.vhd",
-                        "os_type": "Linux_64",
-                        "memory_size": 1024,
-                        "cpus": 1,
-                        "applications": [
-                            "cURL",
-                            "Wget2",
-                            "Nano",
-                            "Powershell",
-                            "7-ZIP"
-                        ]
-                    }
-                }
-            ]
-        }
+  "CourseName": "Virtualisatie",
+  "EnvironmentVariables": {
+    "ActiveDirectoryDomain": "",
+    "Subnets": [
+      {
+        "Name": "Subnet1",
+        "Network": "192.168.2.1/24",
+        "Type": "host-only",
+        "AdapterName": "vboxnet0"
+      },
+      {
+        "Name": "Subnet2",
+        "Network": "192.168.3.1/24",
+        "Type": "host-only",
+        "AdapterName": "vboxnet1"
+      },
+      {
+        "Name": "Subnet3",
+        "Network": "192.168.4.1/24",
+        "Type": "host-only",
+        "AdapterName": "vboxnet2"
+      },
+      {
+        "Name": "Subnet4",
+        "Network": "",
+        "Type": "bridged",
+        "AdapterName": "bridged"
+      },
+      {
+        "Name": "NATNetwork",
+        "Network": "192.168.57.1/24",
+        "Type": "natnetwork",
+        "AdapterName": "natnet1"
+      }
     ]
+  },
+  "VMs": [
+    {
+      "VMName": "VM1",
+      "Platform": "Linux",
+      "DistroName": "Ubuntu",
+      "DistroVariant": "Server",
+      "DistroVersion": "24.04",
+      "VMNetworkTypes": ["Subnet1", "NATNetwork", "Subnet3", "Subnet4"],
+      "VMIPAddresses": ["172.168.0.10", "192.168.57.10", "192.168.57.11"],
+      "VMCpuCount": 2,
+      "VMMemorySize": 2048,
+      "VMApplications": [
+        "App1",
+        "App2",
+        "App3"
+      ],
+      "Roles": [
+        "Domain Controller",
+        "DNS Server"
+      ]
+    },
+    {
+      "VMName": "VM2",
+      "Platform": "Windows",
+      "DistroName": "Server",
+      "DistroVariant": "",
+      "DistroVersion": "2019",
+      "VMNetworkType": "nat",
+      "VMCpuCount": 4,
+      "VMMemorySize": 4096,
+      "VMApplications": [
+        "App1",
+        "App2"
+      ],
+      "Roles": [
+        "Web Server"
+      ]
+    },
+    {
+      "VMName": "VM3",
+      "Platform": "Linux",
+      "DistroName": "Ubuntu",
+      "DistroVariant": "Server",
+      "DistroVersion": "24.04",
+      "VMNetworkTypes": ["Subnet1", "NATNetwork", "Subnet2"],
+      "VMIPAddresses": ["172.168.0.11", "192.168.57.11", "192.168.57.12"],
+      "VMCpuCount": 2,
+      "VMMemorySize": 2048,
+      "VMApplications": [
+        "App3",
+        "App4"
+      ],
+      "Roles": [
+        "Database Server"
+      ]
+    }
+  ]
 }
