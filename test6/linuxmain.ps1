@@ -2,6 +2,7 @@ param (
     [string]$VMName,
     [string]$VHDUrl,
     [string]$OSType,
+    [string]$DistroName,
     [int]$MemorySize,
     [int]$CPUs,
     [string]$NetworkTypes,  # JSON-string
@@ -129,6 +130,7 @@ if ($vmExists) {
         "-VMName", $VMName,
         "-VHDUrl", $VHDUrl,
         "-OSType", $OSType,
+        "-DistroName", $DistroName,
         "-MemorySize", $MemorySize,
         "-CPUs", $CPUs,
         "-NetworkTypes", $NetworkTypes,
