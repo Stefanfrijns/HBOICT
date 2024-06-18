@@ -2,6 +2,7 @@ param (
     [string]$VMName,
     [string]$VHDUrl,
     [string]$OSType,
+    [string]$DistroName,
     [int]$MemorySize,
     [int]$CPUs,
     [string]$NetworkTypes,
