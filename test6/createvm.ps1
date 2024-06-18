@@ -187,16 +187,14 @@ try {
     $nicIndex = 2  # Start from 2 because NIC1 is already configured as NAT
     foreach ($networkType in $networkTypesArray) {
         Log-Message "Configuring network: Type=$($networkType.Type), AdapterName=$($networkType.AdapterName), Network=$($networkType.Network)"
-        if (-not $networkType.Type -or -not $networkType.AdapterName -or (-not $networkType.Network -and $networkType.Type -ne "bridged")) {
-            Log-Message "Missing parameters for network configuration: Type=$($networkType.Type), AdapterName=$($networkType.AdapterName), Network=$($networkType.Network)"
-            throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork (except for bridged)"
+        if ($networkType.Type -eq "bridged") {
+            $argsString = "-VMName $VMName -NetworkType $($networkType.Type) -AdapterName $($networkType.AdapterName) -NicIndex $nicIndex"
+        } else {
+            $argsString = "-VMName $VMName -NetworkType $($networkType.Type) -AdapterName $($networkType.AdapterName) -SubnetNetwork $($networkType.Network) -NicIndex $nicIndex"
         }
-
-        $argsString = "-VMName $VMName -NetworkType $($networkType.Type) -AdapterName $($networkType.AdapterName) -SubnetNetwork $($networkType.Network) -NicIndex $nicIndex"
-        Log-Message "Running network configuration with args: $argsString"
         
+        Log-Message "Running network configuration with args: $argsString"
         Invoke-Expression "$ConfigureNetworkPath $argsString"
-
         $nicIndex++
     }
 
