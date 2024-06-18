@@ -147,6 +147,7 @@ try {
     # Modify VM settings
     Log-Message "Modifying VM settings..."
     & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --nic1 nat --vram 16 --graphicscontroller vmsvga
+    & "$vboxManagePath" modifyvm $VMName --natpf1 "SSH,tcp,,2222,,22"
     Log-Message "VM settings modified successfully."
 
     # Add storage controller with 1 port
@@ -183,12 +184,12 @@ try {
     }
 
     # Configureer de netwerken
-    $nicIndex = 1
+    $nicIndex = 2  # Start from 2 because NIC1 is already configured as NAT
     foreach ($networkType in $networkTypesArray) {
         Log-Message "Configuring network: Type=$($networkType.Type), AdapterName=$($networkType.AdapterName), Network=$($networkType.Network)"
-        if (-not $networkType.Type -or -not $networkType.AdapterName -or -not $networkType.Network) {
+        if (-not $networkType.Type -or -not $networkType.AdapterName -or (-not $networkType.Network -and $networkType.Type -ne "bridged")) {
             Log-Message "Missing parameters for network configuration: Type=$($networkType.Type), AdapterName=$($networkType.AdapterName), Network=$($networkType.Network)"
-            throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork"
+            throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork (except for bridged)"
         }
 
         $argsString = "-VMName $VMName -NetworkType $($networkType.Type) -AdapterName $($networkType.AdapterName) -SubnetNetwork $($networkType.Network) -NicIndex $nicIndex"
@@ -202,6 +203,22 @@ try {
     Log-Message "Starting VM..."
     & "$vboxManagePath" startvm $VMName --type headless
     Log-Message "VM started successfully."
+
+    # Download and execute the post-configuration script
+    $postConfigScriptUrl = "https://raw.githubusercontent.com/Matthias-Schulski/saxion-flex-infra/main/infra/linux/virtualbox/linuxNaconfiguratie.ps1"
+    $postConfigScriptPath = "$downloadsPath\linuxNaconfiguratie.ps1"
+    Download-File -url $postConfigScriptUrl -output $postConfigScriptPath
+
+    # Execute the post-configuration script with the provided parameters
+    $postConfigArgs = "-vmname $VMName -distroname $DistroName -applications $Applications"
+    Log-Message "Running post-configuration script with args: $postConfigArgs"
+    try {
+        & "$postConfigScriptPath" $postConfigArgs
+        Log-Message "Post-configuration script executed successfully."
+    } catch {
+        Log-Message "Failed to execute post-configuration script: $($_.Exception.Message)"
+        throw
+    }
 }
 catch {
     Log-Message "An error occurred: $($_.Exception.Message)"
@@ -211,4 +228,3 @@ Log-Message "Script execution completed successfully."
 
 # Herstel de oorspronkelijke Execution Policy
 Set-ExecutionPolicy -ExecutionPolicy $previousExecutionPolicy -Scope Process -Force
-echo test
