@@ -7,8 +7,8 @@ param (
 )
 
 # Validate input parameters
-if (-not $VMName -or -not $NetworkType -or -not $AdapterName -or -not $SubnetNetwork -or -not $NicIndex) {
-    throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork, NicIndex"
+if (-not $VMName -or -not $NetworkType -or -not $AdapterName -or (-not $SubnetNetwork -and $NetworkType -ne "bridged") -or -not $NicIndex) {
+    throw "All parameters must be provided: VMName, NetworkType, AdapterName, SubnetNetwork (except for bridged), NicIndex"
 }
 
 # Path to VBoxManage
@@ -152,19 +152,27 @@ try {
             & "$vboxManagePath" natnetwork add --netname $natNetName --network $SubnetNetwork --dhcp off
             $actualAdapterName = $natNetName
             Save-NetworkConfiguration -courseName $courseName -VMName $VMName -OriginalAdapterName $AdapterName -ActualAdapterName $actualAdapterName
+        } elseif ($NetworkType -eq "bridged") {
+            $actualAdapterName = $AdapterName
+            Save-NetworkConfiguration -courseName $courseName -VMName $VMName -OriginalAdapterName $AdapterName -ActualAdapterName $actualAdapterName
         } else {
             throw "Unsupported network type: $NetworkType"
         }
     }
 
+    # Configure the network adapters
     if ($NetworkType -eq "host-only") {
         Write-Output "Configuring host-only network for $VMName using adapter $actualAdapterName"
         & "$vboxManagePath" modifyvm $VMName --nic$NicIndex hostonly --hostonlyadapter$NicIndex $actualAdapterName
     } elseif ($NetworkType -eq "natnetwork") {
         Write-Output "Configuring NAT network for $VMName using network $actualAdapterName"
         & "$vboxManagePath" modifyvm $VMName --nic$NicIndex natnetwork --nat-network$NicIndex $actualAdapterName
+    } elseif ($NetworkType -eq "bridged") {
+        Write-Output "Configuring bridged network for $VMName using adapter $actualAdapterName"
+        & "$vboxManagePath" modifyvm $VMName --nic$NicIndex bridged --bridgeadapter$NicIndex $actualAdapterName
     }
 
+    Start-Sleep -Seconds 2  # Pause for 2 seconds to avoid lock issues
     Write-Output "Network configuration completed for $VMName"
 } catch {
     Write-Output "An error occurred: $($_.Exception.Message)"
