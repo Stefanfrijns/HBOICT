@@ -147,8 +147,15 @@ try {
     # Modify VM settings
     Log-Message "Modifying VM settings..."
     & "$vboxManagePath" modifyvm $VMName --memory $MemorySize --cpus $CPUs --nic1 nat --vram 16 --graphicscontroller vmsvga
-    & "$vboxManagePath" modifyvm $VMName --natpf1 "SSH,tcp,,2222,,22"
-    Log-Message "VM settings modified successfully."
+
+    # Assign a unique SSH port for this VM
+    $sshPortBase = 2222
+    $existingVMs = & "$vboxManagePath" list vms
+    $sshPortOffset = ($existingVMs.Count + 1) * 10  # Ensure we get a unique port offset
+    $sshPort = $sshPortBase + $sshPortOffset
+
+    & "$vboxManagePath" modifyvm $VMName --natpf1 "SSH,tcp,,$sshPort,,22"
+    Log-Message "VM settings modified successfully with SSH port $sshPort."
 
     # Add storage controller with 1 port
     Log-Message "Adding storage controller..."
@@ -208,7 +215,7 @@ try {
     Download-File -url $postConfigScriptUrl -output $postConfigScriptPath
 
     # Execute the post-configuration script with the provided parameters
-    $postConfigArgs = "-vmname $VMName -distroname $DistroName -applications $Applications"
+    $postConfigArgs = "-vmname $VMName -distroname $DistroName -applications $Applications -sshport $sshPort"
     Log-Message "Running post-configuration script with args: $postConfigArgs"
     try {
         & "$postConfigScriptPath" $postConfigArgs
